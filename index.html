@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<!-- 本版本已适配 JSONBin，修复了保存按钮无响应的问题 -->
+<!-- 本版本已适配 JSONBin 云端存储，手机平板数据自动同步 -->
+<!-- 已删除：已完成章节卡片、标记章节完成功能 -->
+<!-- 新增：做题明细中编辑/保存按钮，避免误触 -->
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -9,7 +11,7 @@
     <meta name="theme-color" content="#b8e0d2">
     <title>上岸工作台·做题数据</title>
     <style>
-        /* ====== 样式（与之前完全一致，为了简洁此处省略，实际代码中会包含） ====== */
+        /* ========== 样式（保留完整） ========== */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         :root { --green-50:#f0f9f4; --green-100:#dcf2e3; --green-200:#c4e6d1; --green-300:#a9dabb; --green-400:#8ccaa3; --green-500:#6fb88a; --green-600:#5aa877; --pink-100:#fce4ec; --pink-200:#f8bbd0; --pink-300:#f48fb1; --yellow-100:#fff9e6; --yellow-200:#fff3b8; --yellow-300:#ffe988; --blue-100:#e3f2fd; --blue-200:#bbdefb; --blue-300:#90caf9; --blue-600:#1565c0; --purple-100:#f3e5f5; --purple-200:#e1bee7; --orange-100:#fff3e0; --orange-200:#ffe0b2; --red:#ff8a80; --red-deep:#e53935; --text:#3d5a4e; --text-light:#6b8a7a; --text-lighter:#9bb5a5; --bg:#f0f9f4; --card:#ffffff; --border:#dcf2e3; --shadow:0 2px 12px rgba(111,184,138,.12); --radius:16px; --radius-sm:10px; --radius-xs:8px; }
         html, body { height:100%; }
@@ -77,22 +79,6 @@
         .overview-item { flex:1; min-width:100px; border-radius:12px; padding:14px; text-align:center; }
         .overview-item .num { font-size:28px; font-weight:900; line-height:1.2; }
         .overview-item .lbl { font-size:12px; color:var(--text-light); font-weight:600; margin-top:2px; }
-        .done-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; background:var(--green-50); border:1.5px solid var(--green-200); margin-bottom:8px; transition:all .2s; position:relative; }
-        .done-item .done-check { width:26px; height:26px; border-radius:8px; background:var(--green-500); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-        .done-item .done-check svg { width:15px; height:15px; }
-        .done-item .done-info { flex:1; min-width:0; }
-        .done-item .done-name { font-size:14px; font-weight:800; color:var(--text); }
-        .done-item .done-name .done-cat { font-size:12px; font-weight:700; color:var(--text-light); }
-        .done-item .done-meta { font-size:11px; color:var(--text-lighter); font-weight:600; margin-top:2px; }
-        .done-item .done-stats { display:flex; align-items:center; gap:10px; flex-shrink:0; }
-        .done-item .done-count { font-size:12px; font-weight:700; color:var(--text-light); }
-        .done-item .done-rate { font-size:15px; font-weight:800; padding:3px 10px; border-radius:8px; background:#fff; }
-        .done-item .done-rate.rate-good { color:var(--green-600); }
-        .done-item .done-rate.rate-mid { color:#f57f17; }
-        .done-item .done-rate.rate-low { color:var(--red-deep); }
-        .done-item .done-badge { font-size:10px; font-weight:700; padding:2px 10px; border-radius:12px; background:var(--yellow-200); color:#795548; margin-left:4px; }
-        .done-item .done-undo { background:transparent; border:none; color:var(--text-lighter); cursor:pointer; padding:4px 6px; border-radius:6px; font-size:12px; transition:all .2s; }
-        .done-item .done-undo:hover { color:var(--red-deep); background:var(--red); }
         #inputTable { table-layout:fixed; }
         #inputTable td { padding:4px; }
         .input-cell { width:100%; padding:6px 8px; border:1.5px solid var(--border); border-radius:6px; font-size:16px; text-align:center; background:var(--card); font-weight:700; text-transform:uppercase; transition:border .15s; }
@@ -112,7 +98,6 @@
         .ch-table-head .ch-name { font-size:14px; font-weight:800; color:var(--green-600); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
         .ch-table-head .ch-rate { font-size:13px; font-weight:800; }
         .ch-table-head .ch-toggle { font-size:11px; color:var(--text-light); font-weight:600; }
-        .ch-table-head .ch-done-badge { font-size:10px; font-weight:700; padding:2px 10px; border-radius:12px; background:var(--yellow-200); color:#795548; margin-left:6px; }
         .ch-delete-btn { background:none; border:none; color:var(--text-lighter); cursor:pointer; font-size:18px; padding:2px 6px; border-radius:6px; transition:all .2s; line-height:1; }
         .ch-delete-btn:hover { color:var(--red-deep); background:var(--red); }
         .ch-table-body { display:none; }
@@ -129,10 +114,6 @@
         .quiz-table tr.wrong-row { background:#fff8f8; }
         .quiz-table tr.right-row { background:var(--green-50); }
         .ch-summary { padding:8px 14px; background:var(--green-50); font-size:12px; font-weight:700; color:var(--text-light); display:flex; justify-content:space-between; border-top:2px solid var(--border); }
-        .done-action-area { margin-top:12px; padding:12px 14px; border-radius:var(--radius-sm); background:var(--yellow-100); border:1.5px dashed var(--yellow-200); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
-        .done-action-area .done-hint { font-size:13px; font-weight:600; color:#795548; display:flex; align-items:center; gap:6px; }
-        .done-action-area .done-hint svg { width:20px; height:20px; flex-shrink:0; }
-        .done-action-area .done-actions { display:flex; gap:8px; flex-wrap:wrap; }
         @media (max-width:768px) {
             .sync-bar { font-size:11px; }
             .top-bar { padding:12px 16px 8px; margin-top:30px; }
@@ -142,9 +123,6 @@
             .stat-table { font-size:11px; }
             .stat-table th, .stat-table td { padding:6px 4px; }
             .overview-item .num { font-size:24px; }
-            .done-action-area { flex-direction:column; align-items:stretch; }
-            .done-action-area .done-actions { justify-content:stretch; }
-            .done-action-area .done-actions .btn { flex:1; }
             .ch-table-head { flex-direction:column; align-items:stretch; }
             .ch-table-head .ch-left { flex-wrap:wrap; }
         }
@@ -169,6 +147,7 @@
 
     <div class="main">
 
+        <!-- 总览卡片 -->
         <div class="card">
             <div class="card-title">
                 <svg class="ct-ic" viewBox="0 0 24 24" fill="none" stroke="var(--blue-300)" stroke-width="2"><path d="M3 3v18h18M8 14v4M13 10v8M18 6v12"/></svg>
@@ -177,6 +156,7 @@
             <div class="overview-grid" id="quizOverview"></div>
         </div>
 
+        <!-- 各大类正确率 -->
         <div class="card">
             <div class="card-title">
                 <svg class="ct-ic" viewBox="0 0 24 24" fill="none" stroke="var(--green-500)" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l3-4 3 3 5-6"/></svg>
@@ -185,15 +165,7 @@
             <div id="quizCatStats"></div>
         </div>
 
-        <div class="card">
-            <div class="card-title">
-                <svg class="ct-ic" viewBox="0 0 24 24" fill="none" stroke="var(--green-500)" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
-                已完成章节
-                <span class="badge" id="chapterDoneCount" style="margin-left:auto;background:var(--green-100);color:var(--green-600)">0</span>
-            </div>
-            <div id="chapterDoneList"></div>
-        </div>
-
+        <!-- 做题明细 -->
         <div class="card">
             <div class="card-title">
                 <svg class="ct-ic" viewBox="0 0 24 24" fill="none" stroke="var(--green-500)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
@@ -204,6 +176,7 @@
             <div id="quizChapterTables"></div>
         </div>
 
+        <!-- 新增做题记录 -->
         <div class="card">
             <div class="card-title">
                 <svg class="ct-ic" viewBox="0 0 24 24" fill="none" stroke="var(--green-500)" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
@@ -256,22 +229,6 @@
                     同步腾讯文档
                 </button>
             </div>
-
-            <div class="done-action-area" id="doneActionArea">
-                <div class="done-hint">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
-                    完成章节：标记当前章节所有题目为「已完成」
-                </div>
-                <div class="done-actions">
-                    <button class="btn btn-success" onclick="markChapterDone()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5 9-9"/></svg>
-                        标记章节完成
-                    </button>
-                    <button class="btn btn-sm btn-soft" onclick="showChapterStatus()" style="font-size:12px;min-height:32px;padding:4px 12px">
-                        📊 查看状态
-                    </button>
-                </div>
-            </div>
         </div>
 
     </div>
@@ -282,11 +239,11 @@
         // ============================================================
         //  🔑 配置区 - 请填入你的 JSONBin 信息
         // ============================================================
-        const JSONBIN_BIN_ID = '6a8069eaf5f4af5e291a0696';
-        const JSONBIN_API_KEY = '$2a$10$5CP8aNxkTSQwYxrkBsQiPurAzPLruWerFI1ToxgcBiExkSOtdXiU.';
+        const JSONBIN_BIN_ID = '6a8069eaf5f4af5e291a0696';      // 如：5f8a9b...
+        const JSONBIN_API_KEY = '$2a$10$5CP8aNxkTSQwYxrkBsQiPurAzPLruWerFI1ToxgcBiExkSOtdXiU.';    // 如：$2a$10$...
 
         // ============================================================
-        //  📦 数据存储层（基于 JSONBin.io，带超时控制）
+        //  📦 数据存储层（基于 JSONBin.io）
         // ============================================================
         var LS_KEY = 'wb_shangan_data_v1';
 
@@ -311,148 +268,148 @@
             window._toastTimer = setTimeout(function() { t.classList.remove('show'); }, 3500);
         }
 
-var DataStore = {
-    cache: [],
-    loaded: false,
+        var DataStore = {
+            cache: [],
+            loaded: false,
 
-    load: function() {
-        var self = this;
-        var url = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`;
+            load: function() {
+                var self = this;
+                var url = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`;
 
-        setSyncState('syncing', '正在从云端加载...');
+                setSyncState('syncing', '正在从云端加载...');
 
-        return fetch(url, {
-            headers: { 'X-Master-Key': JSONBIN_API_KEY }
-        })
-        .then(res => {
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return res.json();
-        })
-        .then(data => {
-            var record = data.record;
-            if (Array.isArray(record)) {
-                self.cache = record;
-            } else {
-                console.warn('[DataStore] record 不是数组，类型:', typeof record);
-                self.cache = [];
-            }
-            self.loaded = true;
-            lsSet(LS_KEY, self.cache);
-            setSyncState('online', '数据加载成功');
-            return self.cache;
-        })
-        .catch(err => {
-            console.warn('[DataStore] 远程加载失败:', err);
-            var local = lsGet(LS_KEY);
-            if (Array.isArray(local) && local.length > 0) {
-                self.cache = local;
-                setSyncState('offline', '离线模式 (使用本地缓存)');
-            } else {
-                self.cache = [];
-                setSyncState('offline', '离线模式 (暂无数据)');
-            }
-            self.loaded = true;
-            return self.cache;
-        });
-    },
-
-    _saveToRemote: function() {
-        var self = this;
-        var url = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
-        var controller = new AbortController();
-        var timeout = setTimeout(() => controller.abort(), 15000);
-
-        return fetch(url, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Master-Key': JSONBIN_API_KEY
+                return fetch(url, {
+                    headers: { 'X-Master-Key': JSONBIN_API_KEY }
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    var record = data.record;
+                    if (Array.isArray(record)) {
+                        self.cache = record;
+                    } else {
+                        console.warn('[DataStore] record 不是数组，类型:', typeof record);
+                        self.cache = [];
+                    }
+                    self.loaded = true;
+                    lsSet(LS_KEY, self.cache);
+                    setSyncState('online', '数据加载成功');
+                    return self.cache;
+                })
+                .catch(err => {
+                    console.warn('[DataStore] 远程加载失败:', err);
+                    var local = lsGet(LS_KEY);
+                    if (Array.isArray(local) && local.length > 0) {
+                        self.cache = local;
+                        setSyncState('offline', '离线模式 (使用本地缓存)');
+                    } else {
+                        self.cache = [];
+                        setSyncState('offline', '离线模式 (暂无数据)');
+                    }
+                    self.loaded = true;
+                    return self.cache;
+                });
             },
-            body: JSON.stringify(self.cache),
-            signal: controller.signal
-        })
-        .then(res => {
-            clearTimeout(timeout);
-            if (!res.ok) throw new Error(`保存失败 HTTP ${res.status}`);
-            setSyncState('online', '数据已保存到云端');
-            return true;
-        })
-        .catch(err => {
-            clearTimeout(timeout);
-            if (err.name === 'AbortError') {
-                console.error('[DataStore] 保存超时');
-                setSyncState('offline', '保存超时，已存本地');
-            } else {
-                console.error('[DataStore] 保存失败:', err);
-                setSyncState('offline', '保存到云端失败，已存本地');
+
+            _saveToRemote: function() {
+                var self = this;
+                var url = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+                var controller = new AbortController();
+                var timeout = setTimeout(() => controller.abort(), 15000);
+
+                return fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': JSONBIN_API_KEY
+                    },
+                    body: JSON.stringify(self.cache),
+                    signal: controller.signal
+                })
+                .then(res => {
+                    clearTimeout(timeout);
+                    if (!res.ok) throw new Error(`保存失败 HTTP ${res.status}`);
+                    setSyncState('online', '数据已保存到云端');
+                    return true;
+                })
+                .catch(err => {
+                    clearTimeout(timeout);
+                    if (err.name === 'AbortError') {
+                        console.error('[DataStore] 保存超时');
+                        setSyncState('offline', '保存超时，已存本地');
+                    } else {
+                        console.error('[DataStore] 保存失败:', err);
+                        setSyncState('offline', '保存到云端失败，已存本地');
+                    }
+                    return false;
+                });
+            },
+
+            query: function(filterFn) {
+                if (!Array.isArray(this.cache)) {
+                    console.warn('[DataStore] cache 不是数组，返回空数组');
+                    return [];
+                }
+                return this.cache.filter(filterFn);
+            },
+
+            add: function(item) {
+                var self = this;
+                if (!Array.isArray(self.cache)) {
+                    console.warn('[DataStore] cache 不是数组，重置为空数组');
+                    self.cache = [];
+                }
+                item._id = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+                self.cache.push(item);
+                lsSet(LS_KEY, self.cache);
+                return self._saveToRemote().then(function(success) {
+                    if (success) {
+                        toast('✅ 数据已同步到云端');
+                    } else {
+                        toast('⚠️ 数据已存本地，联网后自动同步');
+                    }
+                    return { success: success, item: item };
+                });
+            },
+
+            update: function(item) {
+                var self = this;
+                if (!Array.isArray(self.cache)) {
+                    console.warn('[DataStore] cache 不是数组，重置为空数组');
+                    self.cache = [];
+                }
+                var idx = self.cache.findIndex(x => x._id === item._id);
+                if (idx >= 0) {
+                    self.cache[idx] = item;
+                } else {
+                    self.cache.push(item);
+                }
+                lsSet(LS_KEY, self.cache);
+                return self._saveToRemote().then(function(success) {
+                    if (!success) toast('⚠️ 更新失败，已存本地');
+                    return item;
+                });
+            },
+
+            remove: function(id) {
+                var self = this;
+                if (!Array.isArray(self.cache)) {
+                    console.warn('[DataStore] cache 不是数组，重置为空数组');
+                    self.cache = [];
+                }
+                self.cache = self.cache.filter(x => x._id !== id);
+                lsSet(LS_KEY, self.cache);
+                return self._saveToRemote().then(function(success) {
+                    if (!success) toast('⚠️ 删除失败，已存本地');
+                    return true;
+                });
             }
-            return false;
-        });
-    },
+        };
 
-    query: function(filterFn) {
-        if (!Array.isArray(this.cache)) {
-            console.warn('[DataStore] cache 不是数组，返回空数组');
-            return [];
-        }
-        return this.cache.filter(filterFn);
-    },
-
-    add: function(item) {
-        var self = this;
-        if (!Array.isArray(self.cache)) {
-            console.warn('[DataStore] cache 不是数组，重置为空数组');
-            self.cache = [];
-        }
-        item._id = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-        self.cache.push(item);
-        lsSet(LS_KEY, self.cache);
-        return self._saveToRemote().then(function(success) {
-            if (success) {
-                toast('✅ 数据已同步到云端');
-            } else {
-                toast('⚠️ 数据已存本地，联网后自动同步');
-            }
-            return { success: success, item: item };
-        });
-    },
-
-    update: function(item) {
-        var self = this;
-        if (!Array.isArray(self.cache)) {
-            console.warn('[DataStore] cache 不是数组，重置为空数组');
-            self.cache = [];
-        }
-        var idx = self.cache.findIndex(x => x._id === item._id);
-        if (idx >= 0) {
-            self.cache[idx] = item;
-        } else {
-            self.cache.push(item);
-        }
-        lsSet(LS_KEY, self.cache);
-        return self._saveToRemote().then(function(success) {
-            if (!success) toast('⚠️ 更新失败，已存本地');
-            return item;
-        });
-    },
-
-    remove: function(id) {
-        var self = this;
-        if (!Array.isArray(self.cache)) {
-            console.warn('[DataStore] cache 不是数组，重置为空数组');
-            self.cache = [];
-        }
-        self.cache = self.cache.filter(x => x._id !== id);
-        lsSet(LS_KEY, self.cache);
-        return self._saveToRemote().then(function(success) {
-            if (!success) toast('⚠️ 删除失败，已存本地');
-            return true;
-        });
-    }
-};
-        
         // ============================================================
-        //  🧩 业务逻辑（大部分不变，只修改保存函数增加反馈）
+        //  🧩 业务逻辑
         // ============================================================
         var DT_QUIZ = '做题记录';
 
@@ -482,12 +439,6 @@ var DataStore = {
             });
         }
 
-        function isChapterDone(cat, chapter) {
-            var records = getChapterRecords(cat, chapter);
-            if (records.length === 0) return false;
-            return records.every(function(r) { return r.done === true; });
-        }
-
         function getChapterStats(cat, chapter) {
             var records = getChapterRecords(cat, chapter);
             var total = records.length;
@@ -497,7 +448,7 @@ var DataStore = {
                 if (parsed.isCorrect === '对') correct++;
             });
             var rate = total > 0 ? Math.round(correct / total * 100) : 0;
-            return { total: total, correct: correct, rate: rate, done: isChapterDone(cat, chapter) };
+            return { total: total, correct: correct, rate: rate };
         }
 
         function deleteChapter(cat, chapter) {
@@ -523,11 +474,13 @@ var DataStore = {
             });
         }
 
+        // ============================================================
+        //  📊 渲染函数（已删除“已完成章节”相关代码）
+        // ============================================================
         function renderQuizData() {
             var records = getQuizRecords();
             var cats = {};
             var chapters = {};
-            var doneChapters = {};
             var totalCorrect = 0, totalAll = 0;
 
             records.forEach(function(r) {
@@ -546,22 +499,9 @@ var DataStore = {
                     chapters[key].correct++;
                     totalCorrect++;
                 }
-                if (r.done) {
-                    if (!doneChapters[key]) doneChapters[key] = { cat: cat, ch: ch, records: [] };
-                    doneChapters[key].records.push(r);
-                }
             });
 
-            var doneChapterKeys = Object.keys(doneChapters);
-            doneChapterKeys.forEach(function(key) {
-                var dc = doneChapters[key];
-                var stats = getChapterStats(dc.cat, dc.ch);
-                dc.total = stats.total;
-                dc.correct = stats.correct;
-                dc.rate = stats.rate;
-                dc.done = stats.done;
-            });
-
+            // 总览
             document.getElementById('quizTotalCount').textContent = records.length;
             var totalRate = totalAll > 0 ? Math.round(totalCorrect / totalAll * 100) : 0;
             var rateColor = totalRate >= 70 ? 'var(--green-500)' : totalRate >= 50 ? '#f57f17' : 'var(--red-deep)';
@@ -572,6 +512,7 @@ var DataStore = {
             overviewHtml += '<div class="overview-item" style="background:var(--red)"><div class="num" style="color:#fff">' + (totalAll - totalCorrect) + '</div><div class="lbl" style="color:#fff">错误数</div></div>';
             document.getElementById('quizOverview').innerHTML = overviewHtml;
 
+            // 各大类正确率
             var catHtml = '';
             Object.keys(cats).sort().forEach(function(cat) {
                 var s = cats[cat];
@@ -584,34 +525,7 @@ var DataStore = {
             });
             document.getElementById('quizCatStats').innerHTML = catHtml || '<div class="empty">暂无数据</div>';
 
-            var doneHtml = '';
-            var doneKeys = Object.keys(doneChapters).sort();
-            document.getElementById('chapterDoneCount').textContent = doneKeys.length;
-            if (doneKeys.length === 0) {
-                doneHtml = '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v18h18M7 15l3-4 3 3 5-6"/></svg><div>暂无已完成章节，完成题目后点击「标记章节完成」</div></div>';
-            } else {
-                doneKeys.forEach(function(key) {
-                    var dc = doneChapters[key];
-                    var rate = dc.rate || 0;
-                    var rateClass = rate >= 70 ? 'rate-good' : rate >= 50 ? 'rate-mid' : 'rate-low';
-                    var total = dc.total || 0;
-                    var correct = dc.correct || 0;
-                    doneHtml += '<div class="done-item">' +
-                        '<div class="done-check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M5 12l5 5 9-9"/></svg></div>' +
-                        '<div class="done-info">' +
-                        '<div class="done-name">' + dc.cat + ' <span class="done-cat">/</span> ' + dc.ch + ' <span class="done-badge">✅ 已完成</span></div>' +
-                        '<div class="done-meta">共 ' + total + ' 题 · 正确 ' + correct + ' 题 · 错误 ' + (total - correct) + ' 题</div>' +
-                        '</div>' +
-                        '<div class="done-stats">' +
-                        '<span class="done-count">' + correct + '/' + total + '</span>' +
-                        '<span class="done-rate ' + rateClass + '">' + rate + '%</span>' +
-                        '<button class="done-undo" onclick="undoChapterDone(\'' + dc.cat.replace(/'/g, "\\'") + '\',\'' + dc.ch.replace(/'/g, "\\'") + '\')" title="取消完成">↩</button>' +
-                        '</div>' +
-                        '</div>';
-                });
-            }
-            document.getElementById('chapterDoneList').innerHTML = doneHtml;
-
+            // 做题明细 - 分类标签
             var chKeys = Object.keys(chapters).sort();
             var catTabs = ['全部'];
             chKeys.forEach(function(k) { var c = chapters[k].cat; if (catTabs.indexOf(c) < 0) catTabs.push(c); });
@@ -622,6 +536,7 @@ var DataStore = {
             });
             document.getElementById('quizCats').innerHTML = tabHtml;
 
+            // 做题明细 - 表格
             var tableHtml = '';
             var filteredChKeys = chKeys.filter(function(k) { return activeQuizCat === '全部' || chapters[k].cat === activeQuizCat; });
             if (filteredChKeys.length === 0) {
@@ -632,19 +547,25 @@ var DataStore = {
                     var rate = s.total > 0 ? Math.round(s.correct / s.total * 100) : 0;
                     var rateClass = rate >= 70 ? 'rate-good' : rate >= 50 ? 'rate-mid' : 'rate-low';
                     var isOpen = (window._openChapters && window._openChapters[k]) || false;
-                    var chapterDone = isChapterDone(s.cat, s.ch);
-                    var doneBadge = chapterDone ? '<span class="ch-done-badge">✅ 已完成</span>' : '';
-                    tableHtml += '<div class="ch-table-group">' +
+                    var isEditing = window._editingChapter === k;
+
+                    // 编辑/保存按钮
+                    var editBtnHtml = isEditing ?
+                        '<button class="btn btn-sm btn-success" onclick="event.stopPropagation(); saveChapterEdit(\'' + k.replace(/'/g, "\\'") + '\')" style="padding:2px 10px;font-size:11px;min-height:28px;">💾 保存</button>' :
+                        '<button class="btn btn-sm btn-soft" onclick="event.stopPropagation(); enterChapterEdit(\'' + k.replace(/'/g, "\\'") + '\')" style="padding:2px 10px;font-size:11px;min-height:28px;">✏️ 编辑</button>';
+
+                    tableHtml += '<div class="ch-table-group" data-chapterkey="' + k + '">' +
                         '<div class="ch-table-head" onclick="toggleChTable(\'' + k.replace(/'/g, "\\'") + '\')">' +
                         '<div class="ch-left">' +
                         '<div class="ch-name">' +
                         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green-500)" stroke-width="2"><path d="M3 3h18v18H3z"/><path d="M3 9h18M9 3v18"/></svg>' +
-                        s.cat + ' / ' + s.ch + doneBadge +
+                        s.cat + ' / ' + s.ch +
                         '</div>' +
                         '</div>' +
                         '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
                         '<span class="ch-rate ' + rateClass + '">' + s.correct + '/' + s.total + ' (' + rate + '%)</span>' +
                         '<span class="ch-toggle">' + (isOpen ? '收起 ▲' : '展开 ▼') + '</span>' +
+                        editBtnHtml +
                         '<button class="ch-delete-btn" onclick="event.stopPropagation(); deleteChapter(\'' + s.cat.replace(/'/g, "\\'") + '\',\'' + s.ch.replace(/'/g, "\\'") + '\')" title="删除该章节所有记录">🗑️</button>' +
                         '</div>' +
                         '</div>' +
@@ -652,20 +573,39 @@ var DataStore = {
                         '<table class="quiz-table"><thead><tr>' +
                         '<th style="width:20%">题号</th><th style="width:20%">我的选项</th><th style="width:20%">正确答案</th><th style="width:20%">对错</th><th style="width:20%">标记</th>' +
                         '</tr></thead><tbody>';
+
                     s.records.sort(function(a, b) { return a.p.qno - b.p.qno; });
                     s.records.forEach(function(item) {
                         var p = item.p, r = item.r;
                         var isC = p.isCorrect === '对';
-                        var mineDisplay = p.myAns || '<span class="td-empty">未填</span>';
-                        var correctDisplay = p.correctAns || '<span class="td-empty">—</span>';
-                        tableHtml += '<tr class="' + (isC ? 'right-row' : 'wrong-row') + '">' +
-                            '<td>第' + p.qno + '题</td>' +
-                            '<td class="td-mine">' + mineDisplay + '</td>' +
-                            '<td class="td-correct">' + correctDisplay + '</td>' +
-                            '<td class="' + (isC ? 'td-right' : 'td-wrong') + '">' + (isC ? '✓ 对' : '✗ 错') + '</td>' +
-                            '<td><div class="mark-cell" onclick="toggleMark(this)"></div></td>' +
-                            '</tr>';
+
+                        if (isEditing) {
+                            // 编辑模式：输入框
+                            var mineVal = p.myAns || '';
+                            var correctVal = p.correctAns || '';
+                            var mineInput = '<input type="text" class="edit-input td-mine" value="' + mineVal + '" maxlength="1" data-id="' + r._id + '" data-field="myAns" placeholder="A" style="width:40px;text-align:center;font-weight:700;font-size:15px;border:1px solid var(--border);border-radius:4px;padding:2px;background:#fff;text-transform:uppercase;">';
+                            var correctInput = '<input type="text" class="edit-input td-correct" value="' + correctVal + '" maxlength="1" data-id="' + r._id + '" data-field="correctAns" placeholder="A" style="width:40px;text-align:center;font-weight:700;font-size:15px;border:1px solid var(--border);border-radius:4px;padding:2px;background:#fff;text-transform:uppercase;">';
+                            tableHtml += '<tr class="' + (isC ? 'right-row' : 'wrong-row') + '">' +
+                                '<td>第' + p.qno + '题</td>' +
+                                '<td>' + mineInput + '</td>' +
+                                '<td>' + correctInput + '</td>' +
+                                '<td class="' + (isC ? 'td-right' : 'td-wrong') + '" id="result-' + r._id + '">' + (isC ? '✓ 对' : '✗ 错') + '</td>' +
+                                '<td><div class="mark-cell" onclick="toggleMark(this)"></div></td>' +
+                                '</tr>';
+                        } else {
+                            // 只读模式：文本
+                            var mineDisplay = p.myAns || '<span class="td-empty">未填</span>';
+                            var correctDisplay = p.correctAns || '<span class="td-empty">—</span>';
+                            tableHtml += '<tr class="' + (isC ? 'right-row' : 'wrong-row') + '">' +
+                                '<td>第' + p.qno + '题</td>' +
+                                '<td class="td-mine">' + mineDisplay + '</td>' +
+                                '<td class="td-correct">' + correctDisplay + '</td>' +
+                                '<td class="' + (isC ? 'td-right' : 'td-wrong') + '">' + (isC ? '✓ 对' : '✗ 错') + '</td>' +
+                                '<td><div class="mark-cell" onclick="toggleMark(this)"></div></td>' +
+                                '</tr>';
+                        }
                     });
+
                     tableHtml += '</tbody></table>';
                     tableHtml += '<div class="ch-summary"><span>共 ' + s.total + ' 题 · 正确 ' + s.correct + ' 题 · 错误 ' + (s.total - s.correct) + ' 题</span><span class="' + rateClass + '">正确率 ' + rate + '%</span></div>';
                     tableHtml += '</div></div>';
@@ -673,9 +613,18 @@ var DataStore = {
             }
             document.getElementById('quizChapterTables').innerHTML = tableHtml;
 
-            updateInputCompletedStyle();
+            // 如果处于编辑模式，自动聚焦第一个输入框
+            if (window._editingChapter) {
+                setTimeout(function() {
+                    var firstInput = document.querySelector('.ch-table-group[data-chapterkey="' + window._editingChapter + '"] .edit-input');
+                    if (firstInput) firstInput.focus();
+                }, 200);
+            }
         }
 
+        // ============================================================
+        //  ✏️ 编辑/保存功能
+        // ============================================================
         function toggleChTable(key) {
             if (!window._openChapters) window._openChapters = {};
             window._openChapters[key] = !window._openChapters[key];
@@ -684,6 +633,84 @@ var DataStore = {
 
         function switchQuizCat(cat) { window._quizCat = cat; renderQuizData(); }
 
+        function enterChapterEdit(chapterKey) {
+            window._editingChapter = chapterKey;
+            renderQuizData();
+            toast('✏️ 已进入编辑模式，修改后点击「保存」');
+        }
+
+        function saveChapterEdit(chapterKey) {
+            var inputs = document.querySelectorAll('.ch-table-group[data-chapterkey="' + chapterKey + '"] .edit-input');
+            if (inputs.length === 0) {
+                toast('没有可保存的修改');
+                return;
+            }
+
+            var updatePromises = [];
+            inputs.forEach(function(input) {
+                var id = input.dataset.id;
+                var field = input.dataset.field;
+                var newVal = input.value.toUpperCase().replace(/[^A-D]/g, '');
+                input.value = newVal;
+
+                var record = DataStore.cache.find(function(r) { return r._id === id; });
+                if (!record) return;
+
+                var parts = record.content.split('|');
+                var qno = 0, myAns = '', correctAns = '', isCorrect = '错';
+                parts.forEach(function(p) {
+                    if (p.indexOf('第') === 0 && p.indexOf('题') > 0) {
+                        var m = p.match(/第(\d+)题/);
+                        if (m) qno = parseInt(m[1]);
+                    }
+                    if (p.indexOf('我的答案:') === 0) myAns = p.slice(5);
+                    if (p.indexOf('正确答案:') === 0) correctAns = p.slice(5);
+                    if (p === '对' || p === '错') isCorrect = p;
+                });
+
+                if (field === 'myAns') {
+                    myAns = newVal;
+                } else if (field === 'correctAns') {
+                    correctAns = newVal;
+                }
+
+                var newIsCorrect = (myAns && correctAns && myAns === correctAns) ? '对' : '错';
+                var newContent = '第' + qno + '题|我的答案:' + myAns + '|正确答案:' + correctAns + '|' + newIsCorrect;
+
+                record.content = newContent;
+                record.correct = (newIsCorrect === '对') ? 1 : 0;
+                record.rate = (newIsCorrect === '对') ? 100 : 0;
+
+                updatePromises.push(DataStore.update(record));
+            });
+
+            if (updatePromises.length === 0) {
+                toast('没有有效的修改');
+                return;
+            }
+
+            setSyncState('syncing', '正在保存修改...');
+            Promise.all(updatePromises)
+                .then(function() {
+                    toast('✅ 已保存 ' + updatePromises.length + ' 条修改');
+                    window._editingChapter = null;
+                    renderQuizData();
+                    setSyncState('online');
+                })
+                .catch(function(err) {
+                    console.error('[saveChapterEdit] 保存失败:', err);
+                    toast('❌ 保存失败，请重试');
+                    setSyncState('offline');
+                });
+        }
+
+        function toggleMark(el) {
+            el.classList.toggle('marked');
+        }
+
+        // ============================================================
+        //  📝 新增记录（表格输入）功能
+        // ============================================================
         var INPUT_ROWS = [];
         var INPUT_QNO_START = 1;
         var _lastFocusedInput = null;
@@ -902,7 +929,6 @@ var DataStore = {
             });
         }
 
-        // ★ 修复后的 saveInputBatch
         function saveInputBatch() {
             var cat = document.getElementById('quizCat').value;
             var chapter = document.getElementById('quizChapter').value.trim();
@@ -937,7 +963,6 @@ var DataStore = {
 
             Promise.all(promises)
                 .then(function(results) {
-                    // results 是一个数组，每个元素包含 { success, item }
                     var allSuccess = results.every(r => r.success !== false);
                     if (allSuccess) {
                         toast('✅ 已保存 ' + results.length + ' 条做题记录');
@@ -956,94 +981,67 @@ var DataStore = {
                 });
         }
 
-        // 其他业务函数（markChapterDone, undoChapterDone, showChapterStatus, toggleMark, syncToTencentDocs 等）保持不变
-        // 为了节省篇幅，这里只保留必要的函数，实际使用时可从原代码中复制。
-        // 但为了完整性，我在下面提供完整的函数定义（与之前相同）。
-
-        function markChapterDone() {
-            var cat = document.getElementById('quizCat').value;
-            var chapter = document.getElementById('quizChapter').value.trim();
-            if (!chapter) { toast('请先输入章节名'); document.getElementById('quizChapter').focus(); return; }
-            var records = getChapterRecords(cat, chapter);
-            if (records.length === 0) { toast('该章节暂无做题记录，请先保存题目'); return; }
-            var invalid = records.filter(function(r) {
-                var parsed = parseQuizContent(r.content);
-                return !parsed.myAns || !parsed.correctAns;
-            });
-            if (invalid.length > 0) { toast('有 ' + invalid.length + ' 条记录缺少选项或答案，请先补充完整'); return; }
-            var allDone = records.every(function(r) { return r.done === true; });
-            if (allDone) { toast('该章节已标记为已完成 ✓'); return; }
-            var stats = getChapterStats(cat, chapter);
-            if (!confirm('章节「' + chapter + '」共 ' + stats.total + ' 题，正确 ' + stats.correct + ' 题，正确率 ' + stats.rate + '%\n确定标记为已完成吗？')) return;
-
-            setSyncState('syncing', '标记中...');
-            var promises = records.map(function(r) {
-                r.done = true;
-                return DataStore.update(r);
-            });
-
-            Promise.all(promises).then(function() {
-                toast('✅ 章节「' + chapter + '」已标记为已完成！');
-                renderQuizData();
-                document.getElementById('quizChapter').value = '';
-                initInputTable();
-                setSyncState('online');
-            }).catch(function(err) {
-                console.error('[markChapterDone] error:', err);
-                toast('标记完成失败，请重试');
-                setSyncState('offline');
-            });
-        }
-
-        function undoChapterDone(cat, chapter) {
-            if (!confirm('确定要取消章节「' + chapter + '」的完成状态吗？')) return;
-            var records = getChapterRecords(cat, chapter);
-            if (records.length === 0) { toast('该章节无记录'); return; }
-            setSyncState('syncing', '取消中...');
-            var promises = records.map(function(r) {
-                r.done = false;
-                return DataStore.update(r);
-            });
-            Promise.all(promises).then(function() {
-                toast('已取消章节「' + chapter + '」的完成状态');
-                renderQuizData();
-                setSyncState('online');
-            }).catch(function(err) {
-                console.error('[undoChapterDone] error:', err);
-                toast('操作失败，请重试');
-                setSyncState('offline');
-            });
-        }
-
-        function showChapterStatus() {
-            var cat = document.getElementById('quizCat').value;
-            var chapter = document.getElementById('quizChapter').value.trim();
-            if (!chapter) { toast('请先输入章节名'); document.getElementById('quizChapter').focus(); return; }
-            var stats = getChapterStats(cat, chapter);
-            var records = getChapterRecords(cat, chapter);
-            if (records.length === 0) { toast('该章节暂无做题记录'); return; }
-            var doneCount = records.filter(function(r) { return r.done; }).length;
-            alert('📊 章节状态\n\n' +
-                '大类：' + cat + '\n' +
-                '章节：' + chapter + '\n' +
-                '总题数：' + stats.total + '\n' +
-                '正确数：' + stats.correct + '\n' +
-                '正确率：' + stats.rate + '%\n' +
-                '已完成：' + (stats.done ? '✅ 是' : '❌ 否') + ' (' + doneCount + '/' + records.length + ' 条标记完成)');
-        }
-
-        function toggleMark(el) {
-            el.classList.toggle('marked');
-        }
-
+        // ============================================================
+        //  📋 同步腾讯文档（保持原有功能）
+        // ============================================================
         function syncToTencentDocs() {
             var records = getQuizRecords();
             if (records.length === 0) { toast('暂无做题记录可同步'); return; }
-            // 此处可保留原有同步逻辑，或简化
-            toast('请使用“同步腾讯文档”功能（可后续完善）');
+
+            var groups = {};
+            var totalCorrect = 0, totalAll = 0;
+            records.forEach(function(r) {
+                var parsed = parseQuizContent(r.content);
+                var key = r.subject + ' > ' + r.title;
+                if (!groups[key]) groups[key] = { subject: r.subject, chapter: r.title, items: [], correct: 0, total: 0 };
+                groups[key].items.push({ qno: parsed.qno, myAns: parsed.myAns || '—', correctAns: parsed.correctAns, isCorrect: parsed.isCorrect });
+                groups[key].total++;
+                if (parsed.isCorrect === '对') groups[key].correct++;
+                totalAll++;
+                if (parsed.isCorrect === '对') totalCorrect++;
+            });
+
+            var md = '# 上岸工作台 · 做题记录\n\n';
+            md += '**同步时间：** ' + new Date().toLocaleString('zh-CN') + '\n';
+            md += '**总题数：** ' + totalAll + ' 题 | **正确：** ' + totalCorrect + ' 题 | **正确率：** ' + (totalAll > 0 ? Math.round(totalCorrect / totalAll * 100) : 0) + '%\n\n';
+            md += '---\n\n';
+
+            Object.keys(groups).sort().forEach(function(key) {
+                var g = groups[key];
+                var rate = g.total > 0 ? Math.round(g.correct / g.total * 100) : 0;
+                md += '## ' + g.subject + ' · ' + g.chapter + '\n';
+                md += '> 正确率：' + g.correct + '/' + g.total + ' = **' + rate + '%**\n\n';
+                md += '| 题号 | 我的选项 | 正确答案 | 对错 |\n';
+                md += '|------|---------|---------|------|\n';
+                g.items.forEach(function(item) {
+                    var icon = item.isCorrect === '对' ? '✓' : '✗';
+                    md += '| 第' + item.qno + '题 | ' + item.myAns + ' | ' + item.correctAns + ' | ' + icon + ' |\n';
+                });
+                md += '\n';
+            });
+
+            window._syncToTencentDocsData = md.replace(/\\n/g, '\n').replace(/\\/g, '\\');
+
+            try {
+                navigator.clipboard.writeText(window._syncToTencentDocsData).then(function() {
+                    toast('做题记录已复制到剪贴板，请对我说"同步到腾讯文档"');
+                }).catch(function() {
+                    toast('请对我说"同步到腾讯文档"');
+                });
+            } catch (e) {
+                toast('请对我说"同步到腾讯文档"');
+            }
+
+            var hint = document.createElement('div');
+            hint.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--blue-600);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2);max-width:90%;text-align:center;line-height:1.6';
+            hint.innerHTML = '做题记录已整理完成（' + records.length + '条）<br>请回到对话对我说：<br>「同步到腾讯文档」';
+            document.body.appendChild(hint);
+            setTimeout(function() { hint.remove(); }, 5000);
         }
 
-        // 大类管理函数
+        // ============================================================
+        //  🏷️ 大类管理
+        // ============================================================
         var CAT_KEY = 'wb_shangan_cats_v1';
         var DEFAULT_CATS = ['图推-第一节', '图推-第二节', '图推-第三节', '图推-第四节', '逻辑判断', '逻辑填空', '资料分析夸夸刷', '政治理论', '常识', '言语理解', '数量关系', '资料分析'];
 
@@ -1108,7 +1106,9 @@ var DataStore = {
             toast('已删除大类：' + name);
         }
 
-        // 初始化
+        // ============================================================
+        //  🚀 初始化
+        // ============================================================
         function init() {
             renderCatSelect();
             DataStore.load().then(function() {
