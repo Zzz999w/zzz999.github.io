@@ -311,127 +311,146 @@
             window._toastTimer = setTimeout(function() { t.classList.remove('show'); }, 3500);
         }
 
-        var DataStore = {
-            cache: [],
-            loaded: false,
+var DataStore = {
+    cache: [],
+    loaded: false,
 
-            load: function() {
-                var self = this;
-                var url = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`;
+    load: function() {
+        var self = this;
+        var url = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`;
 
-                setSyncState('syncing', '正在从云端加载...');
+        setSyncState('syncing', '正在从云端加载...');
 
-                return fetch(url, {
-                    headers: { 'X-Master-Key': JSONBIN_API_KEY }
-                })
-                .then(res => {
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    return res.json();
-                })
-                .then(data => {
-                    self.cache = data.record || [];
-                    self.loaded = true;
-                    lsSet(LS_KEY, self.cache);
-                    setSyncState('online', '数据加载成功');
-                    return self.cache;
-                })
-                .catch(err => {
-                    console.warn('[DataStore] 远程加载失败:', err);
-                    var local = lsGet(LS_KEY);
-                    if (local && local.length > 0) {
-                        self.cache = local;
-                        setSyncState('offline', '离线模式 (使用本地缓存)');
-                    } else {
-                        self.cache = [];
-                        setSyncState('offline', '离线模式 (暂无数据)');
-                    }
-                    self.loaded = true;
-                    return self.cache;
-                });
-            },
-
-            // ★ 修复：增加超时控制（10秒）
-            _saveToRemote: function() {
-                var self = this;
-                var url = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
-                var controller = new AbortController();
-                var timeout = setTimeout(() => controller.abort(), 10000); // 10秒超时
-
-                return fetch(url, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': JSONBIN_API_KEY
-                    },
-                    body: JSON.stringify(self.cache),
-                    signal: controller.signal
-                })
-                .then(res => {
-                    clearTimeout(timeout);
-                    if (!res.ok) throw new Error(`保存失败 HTTP ${res.status}`);
-                    setSyncState('online', '数据已保存到云端');
-                    return true;
-                })
-                .catch(err => {
-                    clearTimeout(timeout);
-                    if (err.name === 'AbortError') {
-                        console.error('[DataStore] 保存超时');
-                        setSyncState('offline', '保存超时，已存本地');
-                    } else {
-                        console.error('[DataStore] 保存失败:', err);
-                        setSyncState('offline', '保存到云端失败，已存本地');
-                    }
-                    return false; // 返回 false 表示失败
-                });
-            },
-
-            query: function(filterFn) {
-                return this.cache.filter(filterFn);
-            },
-
-            // ★ 修复：add 始终 resolve，但返回 { success: true/false }
-            add: function(item) {
-                var self = this;
-                item._id = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-                self.cache.push(item);
-                lsSet(LS_KEY, self.cache);
-                // 执行远程保存，但无论成功失败都 resolve
-                return self._saveToRemote().then(function(success) {
-                    if (success) {
-                        toast('✅ 数据已同步到云端');
-                    } else {
-                        toast('⚠️ 数据已存本地，联网后自动同步');
-                    }
-                    return { success: success, item: item };
-                });
-            },
-
-            update: function(item) {
-                var self = this;
-                var idx = self.cache.findIndex(x => x._id === item._id);
-                if (idx >= 0) {
-                    self.cache[idx] = item;
-                } else {
-                    self.cache.push(item);
-                }
-                lsSet(LS_KEY, self.cache);
-                return self._saveToRemote().then(function(success) {
-                    if (!success) toast('⚠️ 更新失败，已存本地');
-                    return item;
-                });
-            },
-
-            remove: function(id) {
-                var self = this;
-                self.cache = self.cache.filter(x => x._id !== id);
-                lsSet(LS_KEY, self.cache);
-                return self._saveToRemote().then(function(success) {
-                    if (!success) toast('⚠️ 删除失败，已存本地');
-                    return true;
-                });
+        return fetch(url, {
+            headers: { 'X-Master-Key': JSONBIN_API_KEY }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            var record = data.record;
+            if (Array.isArray(record)) {
+                self.cache = record;
+            } else {
+                console.warn('[DataStore] record 不是数组，类型:', typeof record);
+                self.cache = [];
             }
-        };
+            self.loaded = true;
+            lsSet(LS_KEY, self.cache);
+            setSyncState('online', '数据加载成功');
+            return self.cache;
+        })
+        .catch(err => {
+            console.warn('[DataStore] 远程加载失败:', err);
+            var local = lsGet(LS_KEY);
+            if (Array.isArray(local) && local.length > 0) {
+                self.cache = local;
+                setSyncState('offline', '离线模式 (使用本地缓存)');
+            } else {
+                self.cache = [];
+                setSyncState('offline', '离线模式 (暂无数据)');
+            }
+            self.loaded = true;
+            return self.cache;
+        });
+    },
 
+    _saveToRemote: function() {
+        var self = this;
+        var url = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+        var controller = new AbortController();
+        var timeout = setTimeout(() => controller.abort(), 15000);
+
+        return fetch(url, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': JSONBIN_API_KEY
+            },
+            body: JSON.stringify(self.cache),
+            signal: controller.signal
+        })
+        .then(res => {
+            clearTimeout(timeout);
+            if (!res.ok) throw new Error(`保存失败 HTTP ${res.status}`);
+            setSyncState('online', '数据已保存到云端');
+            return true;
+        })
+        .catch(err => {
+            clearTimeout(timeout);
+            if (err.name === 'AbortError') {
+                console.error('[DataStore] 保存超时');
+                setSyncState('offline', '保存超时，已存本地');
+            } else {
+                console.error('[DataStore] 保存失败:', err);
+                setSyncState('offline', '保存到云端失败，已存本地');
+            }
+            return false;
+        });
+    },
+
+    query: function(filterFn) {
+        if (!Array.isArray(this.cache)) {
+            console.warn('[DataStore] cache 不是数组，返回空数组');
+            return [];
+        }
+        return this.cache.filter(filterFn);
+    },
+
+    add: function(item) {
+        var self = this;
+        if (!Array.isArray(self.cache)) {
+            console.warn('[DataStore] cache 不是数组，重置为空数组');
+            self.cache = [];
+        }
+        item._id = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+        self.cache.push(item);
+        lsSet(LS_KEY, self.cache);
+        return self._saveToRemote().then(function(success) {
+            if (success) {
+                toast('✅ 数据已同步到云端');
+            } else {
+                toast('⚠️ 数据已存本地，联网后自动同步');
+            }
+            return { success: success, item: item };
+        });
+    },
+
+    update: function(item) {
+        var self = this;
+        if (!Array.isArray(self.cache)) {
+            console.warn('[DataStore] cache 不是数组，重置为空数组');
+            self.cache = [];
+        }
+        var idx = self.cache.findIndex(x => x._id === item._id);
+        if (idx >= 0) {
+            self.cache[idx] = item;
+        } else {
+            self.cache.push(item);
+        }
+        lsSet(LS_KEY, self.cache);
+        return self._saveToRemote().then(function(success) {
+            if (!success) toast('⚠️ 更新失败，已存本地');
+            return item;
+        });
+    },
+
+    remove: function(id) {
+        var self = this;
+        if (!Array.isArray(self.cache)) {
+            console.warn('[DataStore] cache 不是数组，重置为空数组');
+            self.cache = [];
+        }
+        self.cache = self.cache.filter(x => x._id !== id);
+        lsSet(LS_KEY, self.cache);
+        return self._saveToRemote().then(function(success) {
+            if (!success) toast('⚠️ 删除失败，已存本地');
+            return true;
+        });
+    }
+};
+        
         // ============================================================
         //  🧩 业务逻辑（大部分不变，只修改保存函数增加反馈）
         // ============================================================
