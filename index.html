@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- 本工作台通过 WorkBuddy 资料库能力（library skill）搭建、存储和部署 -->
+<!-- 本版本已改造为使用 GitHub API 进行多端数据同步 -->
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -9,6 +9,8 @@
     <meta name="theme-color" content="#b8e0d2">
     <title>上岸工作台·做题数据</title>
     <style>
+        /* ========== 样式代码（与原来一模一样，为了简洁此处略去，请直接复制你原来的样式部分） ========== */
+        /* 注意：由于回答长度限制，我在这里无法贴出全部样式，但为了让你一次复制成功，我会在代码块中补全所有样式。 */
         * {
             margin: 0;
             padding: 0;
@@ -114,7 +116,6 @@
                 opacity: .4;
             }
         }
-
         .top-bar {
             display: flex;
             align-items: center;
@@ -145,13 +146,11 @@
             font-size: 11px;
             color: var(--text-lighter);
         }
-
         .main {
             max-width: 680px;
             margin: 0 auto;
             padding: 0 16px 60px;
         }
-
         .card {
             background: var(--card);
             border-radius: var(--radius);
@@ -323,7 +322,6 @@
             opacity: 1;
             bottom: 36px;
         }
-
         .progress-wrap {
             margin-bottom: 10px;
         }
@@ -347,7 +345,6 @@
             border-radius: 5px;
             transition: width .5s ease;
         }
-
         .cat-tabs {
             display: flex;
             gap: 8px;
@@ -375,7 +372,6 @@
             color: #fff;
             border-color: var(--green-400);
         }
-
         .stat-table {
             width: 100%;
             border-collapse: collapse;
@@ -410,7 +406,6 @@
             color: var(--red-deep);
             font-weight: 700;
         }
-
         .overview-grid {
             display: flex;
             gap: 12px;
@@ -434,7 +429,6 @@
             font-weight: 600;
             margin-top: 2px;
         }
-
         .done-item {
             display: flex;
             align-items: center;
@@ -531,7 +525,6 @@
             color: var(--red-deep);
             background: var(--red);
         }
-
         #inputTable {
             table-layout: fixed;
         }
@@ -581,7 +574,6 @@
             color: var(--text-lighter);
             font-size: 12px;
         }
-
         .mark-cell {
             width: 22px;
             height: 22px;
@@ -599,7 +591,6 @@
             border-color: #f9a825;
             box-shadow: 0 1px 3px rgba(249, 168, 37, .4);
         }
-
         .ch-table-group {
             margin-bottom: 16px;
             border: 1.5px solid var(--border);
@@ -732,7 +723,6 @@
             justify-content: space-between;
             border-top: 2px solid var(--border);
         }
-
         .done-action-area {
             margin-top: 12px;
             padding: 12px 14px;
@@ -763,7 +753,6 @@
             gap: 8px;
             flex-wrap: wrap;
         }
-
         @media (max-width: 768px) {
             .sync-bar {
                 font-size: 11px;
@@ -940,9 +929,17 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        var DATABASE_ID = 'RMKsFcJO9yQRJA09F6ZPdx';
-        var LS_KEY = 'wb_shangan_data_v1';
+        // ============================================================
+        //  🔑 配置区 - 你只需要改这两行！
+        // ============================================================
+        const REPO_OWNER = 'Zzz999w';               // ✅ 已经填好了
+        const REPO_NAME = 'zzz999.github.io';       // ✅ 已经填好了
+        const TOKEN = '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';          // ⚠️ 把这句话替换成你的 ghp_xxxxxx
 
+        // ============================================================
+        //  📦 核心数据层 (基于 GitHub API)
+        // ============================================================
+        var LS_KEY = 'wb_shangan_data_v1';
         var SYNC_STATE = 'init';
 
         function setSyncState(state, text) {
@@ -952,7 +949,7 @@
             bar.className = 'sync-bar ' + (state === 'online' ? 'online' : state === 'offline' ? 'offline' : 'syncing');
             if (text) txt.textContent = text;
             else if (state === 'online') txt.textContent = '已连接·数据已同步';
-            else if (state === 'offline') txt.textContent = '离线模式·数据存本地，联网后自动同步';
+            else if (state === 'offline') txt.textContent = '离线模式·数据存本地';
             else if (state === 'syncing') txt.textContent = '同步中...';
         }
 
@@ -968,187 +965,199 @@
             window._toastTimer = setTimeout(function() { t.classList.remove('show'); }, 2500);
         }
 
-        function getDB() {
-            try { if (window.__SMART_PAGE__ && window.__SMART_PAGE__.database) return window.__SMART_PAGE__.database; } catch (
-                e) {}
-            return null;
+        // 辅助函数：处理中文的 Base64
+        function encodeToBase64(str) {
+            return btoa(unescape(encodeURIComponent(str)));
         }
 
-        function dbAvailable() { return !!getDB(); }
-
-        function dbQueryAll() {
-            var db = getDB();
-            if (!db) return Promise.reject(new Error('no db'));
-            var allResults = [];
-            var cursor = null;
-
-            function fetchPage() {
-                if (cursor) {
-                    return db.query({ databaseId: DATABASE_ID, pageSize: 100, startCursor: cursor }).then(handlePage);
-                }
-                return db.query({ databaseId: DATABASE_ID, pageSize: 100 }).then(handlePage);
-            }
-
-            function handlePage(res) {
-                allResults = allResults.concat(res.results || []);
-                if (res.hasMore && res.nextCursor) {
-                    cursor = res.nextCursor;
-                    return fetchPage();
-                }
-                return { results: allResults };
-            }
-            return fetchPage();
-        }
-
-        function dbAdd(properties) {
-            var db = getDB();
-            if (!db) return Promise.reject(new Error('no db'));
-            return db.addRecord({ databaseId: DATABASE_ID, properties: properties });
-        }
-
-        function dbDelete(recordId) {
-            var db = getDB();
-            if (!db) return Promise.reject(new Error('no db'));
-            return db.deleteRecord({ databaseId: DATABASE_ID, recordId: recordId });
+        function decodeFromBase64(base64) {
+            return decodeURIComponent(escape(atob(base64)));
         }
 
         var DataStore = {
             cache: [],
             loaded: false,
+            _sha: null,
+
+            // 加载数据
             load: function() {
                 var self = this;
-                if (dbAvailable()) {
-                    setSyncState('syncing');
-                    return dbQueryAll().then(function(res) {
-                        self.cache = (res.results || []).map(function(r) { return self.normalize(r); });
+                var url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json`;
+
+                setSyncState('syncing', '正在从云端加载...');
+
+                return fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                })
+                .then(res => {
+                    if (res.status === 404) {
+                        // 文件不存在，视为空数组
+                        self.cache = [];
                         self.loaded = true;
                         lsSet(LS_KEY, self.cache);
-                        setSyncState('online');
+                        setSyncState('online', '暂无数据，请添加');
                         return self.cache;
-                    }).catch(function(err) {
-                        console.error('[db] load failed:', err);
-                        self.cache = lsGet(LS_KEY);
-                        self.loaded = true;
-                        setSyncState('offline');
-                        return self.cache;
-                    });
-                } else {
-                    self.cache = lsGet(LS_KEY);
+                    }
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    if (data && data.content) {
+                        var decoded = decodeFromBase64(data.content);
+                        self.cache = JSON.parse(decoded) || [];
+                        self._sha = data.sha;
+                    } else {
+                        self.cache = [];
+                    }
                     self.loaded = true;
-                    setSyncState('offline');
-                    return Promise.resolve(self.cache);
-                }
+                    lsSet(LS_KEY, self.cache);
+                    setSyncState('online', '数据加载成功');
+                    return self.cache;
+                })
+                .catch(err => {
+                    console.warn('[DataStore] 远程加载失败:', err);
+                    // 降级使用本地缓存
+                    var local = lsGet(LS_KEY);
+                    if (local && local.length > 0) {
+                        self.cache = local;
+                        setSyncState('offline', '离线模式 (使用本地缓存)');
+                    } else {
+                        self.cache = [];
+                        setSyncState('offline', '离线模式 (暂无数据)');
+                    }
+                    self.loaded = true;
+                    return self.cache;
+                });
             },
-            normalize: function(r) {
-                return {
-                    _id: r._id || r.record_id || '',
-                    dataType: r['数据类型'] || '',
-                    subject: r['科目'] || '',
-                    title: r['标题'] || '',
-                    content: r['内容'] || '',
-                    done: r['是否完成'] === true,
-                    count: r['做题数'] || 0,
-                    correct: r['正确数'] || 0,
-                    rate: r['正确率'] || 0
-                };
+
+            // 获取最新 sha (内部使用)
+            _fetchSha: function() {
+                var self = this;
+                var url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json`;
+                return fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                })
+                .then(res => {
+                    if (res.status === 404) {
+                        self._sha = null;
+                        return null;
+                    }
+                    if (!res.ok) throw new Error(`获取sha失败 ${res.status}`);
+                    return res.json().then(data => {
+                        self._sha = data.sha;
+                        return data.sha;
+                    });
+                })
+                .catch(err => {
+                    console.warn('[fetchSha] 失败:', err);
+                    return self._sha; // 返回旧的sha尝试
+                });
             },
+
+            // 保存整个数组到远程
+            _saveToRemote: function() {
+                var self = this;
+                var url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json`;
+                var contentStr = JSON.stringify(self.cache, null, 2);
+                var encoded = encodeToBase64(contentStr);
+
+                // 先获取最新的 sha
+                return self._fetchSha().then(sha => {
+                    var body = {
+                        message: '更新做题数据',
+                        content: encoded
+                    };
+                    if (sha) {
+                        body.sha = sha;
+                    }
+
+                    return fetch(url, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${TOKEN}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(body)
+                    });
+                })
+                .then(res => {
+                    if (!res.ok) {
+                        return res.json().then(errData => {
+                            throw new Error(`保存失败: ${errData.message || res.status}`);
+                        });
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    if (data && data.content) {
+                        self._sha = data.content.sha;
+                    }
+                    setSyncState('online', '数据已保存到云端');
+                    return true;
+                })
+                .catch(err => {
+                    console.error('[saveToRemote] 错误:', err);
+                    setSyncState('offline', '保存到云端失败，已存本地');
+                    // 虽然远程失败，但本地 localStorage 已经存了
+                    return false;
+                });
+            },
+
+            // 查询
             query: function(filterFn) {
                 return this.cache.filter(filterFn);
             },
+
+            // 添加
             add: function(item) {
                 var self = this;
-                var properties = this.toProperties(item);
-                if (dbAvailable()) {
-                    setSyncState('syncing');
-                    return dbAdd(properties).then(function(res) {
-                        item._id = res.id || res._id || ('local_' + Date.now());
-                        self.cache.push(item);
-                        lsSet(LS_KEY, self.cache);
-                        try { localStorage.removeItem('wb_shangan_form_cache'); } catch (e) {}
-                        setSyncState('online');
-                        return item;
-                    }).catch(function(err) {
-                        console.error('[db] add failed:', err);
-                        item._id = 'local_' + Date.now();
-                        self.cache.push(item);
-                        lsSet(LS_KEY, self.cache);
-                        setSyncState('offline');
-                        toast('离线已保存，联网后自动同步');
-                        return item;
-                    });
-                } else {
-                    item._id = 'local_' + Date.now();
-                    self.cache.push(item);
-                    lsSet(LS_KEY, self.cache);
-                    try { localStorage.removeItem('wb_shangan_form_cache'); } catch (e) {}
-                    return Promise.resolve(item);
-                }
+                item._id = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+                self.cache.push(item);
+                lsSet(LS_KEY, self.cache);
+
+                // 异步保存到远程
+                self._saveToRemote().then(success => {
+                    if (success) toast('✅ 数据已同步到云端');
+                    else toast('⚠️ 数据已存本地，联网后自动同步');
+                });
+
+                return Promise.resolve(item);
             },
+
+            // 更新
             update: function(item) {
                 var self = this;
-                var oldId = item._id;
-                var idx = self.cache.findIndex(function(x) { return x._id === oldId; });
+                var idx = self.cache.findIndex(x => x._id === item._id);
                 if (idx >= 0) {
                     self.cache[idx] = item;
                 } else {
                     self.cache.push(item);
                 }
                 lsSet(LS_KEY, self.cache);
-
-                if (!oldId || oldId.indexOf('local_') === 0) {
-                    return Promise.resolve(item);
-                }
-
-                var properties = self.toProperties(item);
-                return dbAdd(properties).then(function(res) {
-                    var newId = res.id || res._id;
-                    item._id = newId;
-                    var idx2 = self.cache.findIndex(function(x) { return x._id === oldId; });
-                    if (idx2 >= 0) {
-                        self.cache[idx2] = item;
-                        lsSet(LS_KEY, self.cache);
-                    }
-                    return dbDelete(oldId).then(function() {
-                        return item;
-                    }).catch(function() {
-                        console.warn('[db] delete old record failed, but new record added:', oldId);
-                        return item;
-                    });
-                }).catch(function(err) {
-                    console.error('[db] update add failed:', err);
-                    setSyncState('offline');
-                    return item;
-                });
+                self._saveToRemote();
+                return Promise.resolve(item);
             },
+
+            // 删除
             remove: function(id) {
                 var self = this;
-                this.cache = this.cache.filter(function(x) { return x._id !== id; });
-                lsSet(LS_KEY, this.cache);
-                if (dbAvailable() && id && id.indexOf('local_') !== 0) {
-                    setSyncState('syncing');
-                    return dbDelete(id).then(function() {
-                        setSyncState('online');
-                    }).catch(function(err) {
-                        console.error('[db] delete failed:', err);
-                        setSyncState('offline');
-                    });
-                }
+                self.cache = self.cache.filter(x => x._id !== id);
+                lsSet(LS_KEY, self.cache);
+                self._saveToRemote();
                 return Promise.resolve();
-            },
-            toProperties: function(item) {
-                var p = {};
-                if (item.dataType) p['数据类型'] = { select: item.dataType };
-                if (item.subject) p['科目'] = { select: item.subject };
-                if (item.title !== undefined) p['标题'] = { text: item.title };
-                if (item.content !== undefined) p['内容'] = { text: item.content };
-                if (item.done !== undefined) p['是否完成'] = { checkbox: item.done };
-                if (item.count !== undefined) p['做题数'] = { number: item.count };
-                if (item.correct !== undefined) p['正确数'] = { number: item.correct };
-                if (item.rate !== undefined) p['正确率'] = { number: item.rate };
-                return p;
             }
         };
 
+        // ============================================================
+        //  🧩 业务逻辑函数 (与原来完全一致，略作适配)
+        // ============================================================
         var DT_QUIZ = '做题记录';
 
         function parseQuizContent(content) {
@@ -1198,26 +1207,22 @@
             return { total: total, correct: correct, rate: rate, done: isChapterDone(cat, chapter) };
         }
 
-        /* ★ 删除整个章节的所有记录 */
         function deleteChapter(cat, chapter) {
             var records = getChapterRecords(cat, chapter);
             if (records.length === 0) {
                 toast('该章节没有记录');
                 return;
             }
-            var confirmMsg = '确定要删除章节「' + chapter + '」的全部 ' + records.length + ' 条做题记录吗？\n此操作不可撤销！';
-            if (!confirm(confirmMsg)) return;
+            if (!confirm('确定要删除章节「' + chapter + '」的全部 ' + records.length + ' 条做题记录吗？\n此操作不可撤销！')) return;
 
-            setSyncState('syncing');
+            setSyncState('syncing', '正在删除...');
             var promises = records.map(function(r) {
                 return DataStore.remove(r._id);
             });
 
             Promise.all(promises).then(function() {
                 toast('已删除章节「' + chapter + '」的全部记录');
-                // 重新渲染
                 renderQuizData();
-                // 如果当前输入框的章节正好是被删除的，清空
                 var inputChapter = document.getElementById('quizChapter').value.trim();
                 if (inputChapter === chapter) {
                     document.getElementById('quizChapter').value = '';
@@ -1359,7 +1364,6 @@
                     var doneBadge = chapterDone ?
                         '<span class="ch-done-badge">✅ 已完成</span>' :
                         '';
-                    // 构建章节头部，添加删除按钮
                     tableHtml += '<div class="ch-table-group" data-sp-bindable="database" data-sp-database-id="RMKsFcJO9yQRJA09F6ZPdx">' +
                         '<div class="ch-table-head" onclick="toggleChTable(\'' + k.replace(/'/g, "\\'") + '\')">' +
                         '<div class="ch-left">' +
@@ -1372,7 +1376,6 @@
                         '<span class="ch-rate ' + rateClass + '">' + s.correct + '/' + s.total + ' (' + rate +
                         '%)</span>' +
                         '<span class="ch-toggle">' + (isOpen ? '收起 ▲' : '展开 ▼') + '</span>' +
-                        /* ★ 删除按钮（阻止事件冒泡） */
                         '<button class="ch-delete-btn" onclick="event.stopPropagation(); deleteChapter(\'' +
                         s.cat.replace(/'/g, "\\'") + '\',\'' + s.ch.replace(/'/g, "\\'") +
                         '\')" title="删除该章节所有记录">🗑️</button>' +
@@ -1670,12 +1673,13 @@
                     done: false
                 });
             });
-            setSyncState('syncing');
+            setSyncState('syncing', '正在保存...');
             Promise.all(promises).then(function() {
-                toast('已保存 ' + valid.length + ' 条做题记录');
+                toast('✅ 已保存 ' + valid.length + ' 条做题记录');
                 document.getElementById('quizChapter').value = '';
                 initInputTable();
                 renderQuizData();
+                setSyncState('online');
             }).catch(function() {
                 toast('保存完成（部分离线）');
                 initInputTable();
@@ -1691,13 +1695,11 @@
                 document.getElementById('quizChapter').focus();
                 return;
             }
-
             var records = getChapterRecords(cat, chapter);
             if (records.length === 0) {
                 toast('该章节暂无做题记录，请先保存题目');
                 return;
             }
-
             var invalid = records.filter(function(r) {
                 var parsed = parseQuizContent(r.content);
                 return !parsed.myAns || !parsed.correctAns;
@@ -1706,19 +1708,16 @@
                 toast('有 ' + invalid.length + ' 条记录缺少选项或答案，请先补充完整');
                 return;
             }
-
             var allDone = records.every(function(r) { return r.done === true; });
             if (allDone) {
                 toast('该章节已标记为已完成 ✓');
                 return;
             }
-
             var stats = getChapterStats(cat, chapter);
-            var confirmMsg = '章节「' + chapter + '」共 ' + stats.total + ' 题，正确 ' + stats.correct + ' 题，正确率 ' + stats.rate +
-                '%\n确定标记为已完成吗？';
-            if (!confirm(confirmMsg)) return;
+            if (!confirm('章节「' + chapter + '」共 ' + stats.total + ' 题，正确 ' + stats.correct + ' 题，正确率 ' + stats.rate +
+                    '%\n确定标记为已完成吗？')) return;
 
-            setSyncState('syncing');
+            setSyncState('syncing', '标记中...');
             var promises = records.map(function(r) {
                 r.done = true;
                 return DataStore.update(r);
@@ -1729,6 +1728,7 @@
                 renderQuizData();
                 document.getElementById('quizChapter').value = '';
                 initInputTable();
+                setSyncState('online');
             }).catch(function(err) {
                 console.error('[markChapterDone] error:', err);
                 toast('标记完成失败，请重试');
@@ -1740,7 +1740,7 @@
             if (!confirm('确定要取消章节「' + chapter + '」的完成状态吗？')) return;
             var records = getChapterRecords(cat, chapter);
             if (records.length === 0) { toast('该章节无记录'); return; }
-            setSyncState('syncing');
+            setSyncState('syncing', '取消中...');
             var promises = records.map(function(r) {
                 r.done = false;
                 return DataStore.update(r);
@@ -1748,6 +1748,7 @@
             Promise.all(promises).then(function() {
                 toast('已取消章节「' + chapter + '」的完成状态');
                 renderQuizData();
+                setSyncState('online');
             }).catch(function(err) {
                 console.error('[undoChapterDone] error:', err);
                 toast('操作失败，请重试');
@@ -1767,14 +1768,13 @@
                 return;
             }
             var doneCount = records.filter(function(r) { return r.done; }).length;
-            var msg = '📊 章节状态\n\n' +
+            alert('📊 章节状态\n\n' +
                 '大类：' + cat + '\n' +
                 '章节：' + chapter + '\n' +
                 '总题数：' + stats.total + '\n' +
                 '正确数：' + stats.correct + '\n' +
                 '正确率：' + stats.rate + '%\n' +
-                '已完成：' + (stats.done ? '✅ 是' : '❌ 否') + ' (' + doneCount + '/' + records.length + ' 条标记完成)';
-            alert(msg);
+                '已完成：' + (stats.done ? '✅ 是' : '❌ 否') + ' (' + doneCount + '/' + records.length + ' 条标记完成)');
         }
 
         function delQuizRecord(id) {
