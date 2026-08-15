@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- 本版本已适配 JSONBin 云端存储，无需 Token，手机平板数据同步 -->
+<!-- 本版本已适配 JSONBin 云端存储，手机平板数据自动同步 -->
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#b8e0d2">
     <title>上岸工作台·做题数据</title>
     <style>
-        /* ========== 样式完全保留，与原来一模一样 ========== */
+        /* ========== 样式完全保留 ========== */
         * {
             margin: 0;
             padding: 0;
@@ -51,10 +51,7 @@
             --radius-sm: 10px;
             --radius-xs: 8px;
         }
-        html,
-        body {
-            height: 100%;
-        }
+        html, body { height: 100%; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
             background: var(--bg);
@@ -79,42 +76,19 @@
             font-weight: 600;
             transition: all .3s;
         }
-        .sync-bar.online {
-            background: var(--green-100);
-            color: var(--green-600);
-        }
-        .sync-bar.offline {
-            background: var(--orange-100);
-            color: #e65100;
-        }
-        .sync-bar.syncing {
-            background: var(--blue-100);
-            color: #1565c0;
-        }
+        .sync-bar.online { background: var(--green-100); color: var(--green-600); }
+        .sync-bar.offline { background: var(--orange-100); color: #e65100; }
+        .sync-bar.syncing { background: var(--blue-100); color: #1565c0; }
         .sync-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
-        .sync-bar.online .sync-dot {
-            background: var(--green-500);
-        }
-        .sync-bar.offline .sync-dot {
-            background: #ff9800;
-        }
-        .sync-bar.syncing .sync-dot {
-            background: var(--blue-300);
-        }
-        @keyframes pulse {
-            0%,
-            100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: .4;
-            }
-        }
+        .sync-bar.online .sync-dot { background: var(--green-500); }
+        .sync-bar.offline .sync-dot { background: #ff9800; }
+        .sync-bar.syncing .sync-dot { background: var(--blue-300); }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
         .top-bar {
             display: flex;
@@ -133,25 +107,11 @@
             justify-content: center;
             flex-shrink: 0;
         }
-        .top-bar .logo svg {
-            width: 22px;
-            height: 22px;
-        }
-        .top-bar .name {
-            font-size: 18px;
-            font-weight: 800;
-            color: var(--green-600);
-        }
-        .top-bar .sub {
-            font-size: 11px;
-            color: var(--text-lighter);
-        }
+        .top-bar .logo svg { width: 22px; height: 22px; }
+        .top-bar .name { font-size: 18px; font-weight: 800; color: var(--green-600); }
+        .top-bar .sub { font-size: 11px; color: var(--text-lighter); }
 
-        .main {
-            max-width: 680px;
-            margin: 0 auto;
-            padding: 0 16px 60px;
-        }
+        .main { max-width: 680px; margin: 0 auto; padding: 0 16px 60px; }
 
         .card {
             background: var(--card);
@@ -170,10 +130,7 @@
             align-items: center;
             gap: 6px;
         }
-        .card-title .ct-ic {
-            width: 18px;
-            height: 18px;
-        }
+        .card-title .ct-ic { width: 18px; height: 18px; }
         .btn {
             display: inline-flex;
             align-items: center;
@@ -189,45 +146,17 @@
             min-height: 40px;
             font-family: inherit;
         }
-        .btn:active {
-            transform: scale(.96);
-        }
-        .btn-primary {
-            background: var(--green-400);
-            color: #fff;
-        }
-        .btn-primary:hover {
-            background: var(--green-500);
-        }
-        .btn-soft {
-            background: var(--green-100);
-            color: var(--green-600);
-        }
-        .btn-soft:hover {
-            background: var(--green-200);
-        }
-        .btn-sm {
-            padding: 5px 12px;
-            min-height: 32px;
-            font-size: 12px;
-        }
-        .btn-success {
-            background: var(--green-600);
-            color: #fff;
-        }
-        .btn-success:hover {
-            background: var(--green-500);
-        }
-        .btn-danger {
-            background: var(--red-deep);
-            color: #fff;
-        }
-        .btn-danger:hover {
-            background: #c62828;
-        }
-        input,
-        textarea,
-        select {
+        .btn:active { transform: scale(.96); }
+        .btn-primary { background: var(--green-400); color: #fff; }
+        .btn-primary:hover { background: var(--green-500); }
+        .btn-soft { background: var(--green-100); color: var(--green-600); }
+        .btn-soft:hover { background: var(--green-200); }
+        .btn-sm { padding: 5px 12px; min-height: 32px; font-size: 12px; }
+        .btn-success { background: var(--green-600); color: #fff; }
+        .btn-success:hover { background: var(--green-500); }
+        .btn-danger { background: var(--red-deep); color: #fff; }
+        .btn-danger:hover { background: #c62828; }
+        input, textarea, select {
             width: 100%;
             padding: 10px 14px;
             border: 1.5px solid var(--border);
@@ -238,9 +167,7 @@
             color: var(--text);
             transition: border .2s;
         }
-        input:focus,
-        textarea:focus,
-        select:focus {
+        input:focus, textarea:focus, select:focus {
             outline: none;
             border-color: var(--green-400);
             background: #fff;
@@ -253,21 +180,9 @@
             background-position: right 14px center;
             padding-right: 36px;
         }
-        label {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--text-light);
-            display: block;
-            margin-bottom: 5px;
-        }
-        .form-row {
-            margin-bottom: 12px;
-        }
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
+        label { font-size: 12px; font-weight: 700; color: var(--text-light); display: block; margin-bottom: 5px; }
+        .form-row { margin-bottom: 12px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .badge {
             display: inline-flex;
             align-items: center;
@@ -276,34 +191,17 @@
             font-size: 11px;
             font-weight: 700;
         }
-        .badge-green {
-            background: var(--green-100);
-            color: var(--green-600);
-        }
-        .badge-red {
-            background: var(--red);
-            color: #fff;
-        }
-        .badge-blue {
-            background: var(--blue-100);
-            color: #1565c0;
-        }
-        .badge-gold {
-            background: var(--yellow-200);
-            color: #795548;
-        }
+        .badge-green { background: var(--green-100); color: var(--green-600); }
+        .badge-red { background: var(--red); color: #fff; }
+        .badge-blue { background: var(--blue-100); color: #1565c0; }
+        .badge-gold { background: var(--yellow-200); color: #795548; }
         .empty {
             text-align: center;
             padding: 30px 20px;
             color: var(--text-lighter);
             font-size: 13px;
         }
-        .empty svg {
-            width: 48px;
-            height: 48px;
-            margin-bottom: 8px;
-            opacity: .4;
-        }
+        .empty svg { width: 48px; height: 48px; margin-bottom: 8px; opacity: .4; }
         .toast {
             position: fixed;
             bottom: 24px;
@@ -320,14 +218,9 @@
             transition: opacity .3s, bottom .3s;
             pointer-events: none;
         }
-        .toast.show {
-            opacity: 1;
-            bottom: 36px;
-        }
+        .toast.show { opacity: 1; bottom: 36px; }
 
-        .progress-wrap {
-            margin-bottom: 10px;
-        }
+        .progress-wrap { margin-bottom: 10px; }
         .progress-label {
             display: flex;
             justify-content: space-between;
@@ -336,12 +229,7 @@
             margin-bottom: 4px;
             color: var(--text-light);
         }
-        .progress-bar {
-            height: 10px;
-            background: var(--green-100);
-            border-radius: 5px;
-            overflow: hidden;
-        }
+        .progress-bar { height: 10px; background: var(--green-100); border-radius: 5px; overflow: hidden; }
         .progress-fill {
             height: 100%;
             background: linear-gradient(90deg, var(--green-400), var(--green-500));
@@ -356,9 +244,7 @@
             overflow-x: auto;
             padding-bottom: 4px;
         }
-        .cat-tabs::-webkit-scrollbar {
-            height: 0;
-        }
+        .cat-tabs::-webkit-scrollbar { height: 0; }
         .cat-tab {
             padding: 6px 14px;
             border-radius: 20px;
@@ -371,11 +257,7 @@
             white-space: nowrap;
             transition: all .2s;
         }
-        .cat-tab.active {
-            background: var(--green-400);
-            color: #fff;
-            border-color: var(--green-400);
-        }
+        .cat-tab.active { background: var(--green-400); color: #fff; border-color: var(--green-400); }
 
         .stat-table {
             width: 100%;
@@ -396,27 +278,12 @@
             border-bottom: 1px solid var(--border);
             color: var(--text);
         }
-        .stat-table tr:hover td {
-            background: var(--green-50);
-        }
-        .stat-table .rate-good {
-            color: var(--green-600);
-            font-weight: 700;
-        }
-        .stat-table .rate-mid {
-            color: #f57f17;
-            font-weight: 700;
-        }
-        .stat-table .rate-low {
-            color: var(--red-deep);
-            font-weight: 700;
-        }
+        .stat-table tr:hover td { background: var(--green-50); }
+        .stat-table .rate-good { color: var(--green-600); font-weight: 700; }
+        .stat-table .rate-mid { color: #f57f17; font-weight: 700; }
+        .stat-table .rate-low { color: var(--red-deep); font-weight: 700; }
 
-        .overview-grid {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
+        .overview-grid { display: flex; gap: 12px; flex-wrap: wrap; }
         .overview-item {
             flex: 1;
             min-width: 100px;
@@ -424,17 +291,8 @@
             padding: 14px;
             text-align: center;
         }
-        .overview-item .num {
-            font-size: 28px;
-            font-weight: 900;
-            line-height: 1.2;
-        }
-        .overview-item .lbl {
-            font-size: 12px;
-            color: var(--text-light);
-            font-weight: 600;
-            margin-top: 2px;
-        }
+        .overview-item .num { font-size: 28px; font-weight: 900; line-height: 1.2; }
+        .overview-item .lbl { font-size: 12px; color: var(--text-light); font-weight: 600; margin-top: 2px; }
 
         .done-item {
             display: flex;
@@ -458,41 +316,13 @@
             justify-content: center;
             flex-shrink: 0;
         }
-        .done-item .done-check svg {
-            width: 15px;
-            height: 15px;
-        }
-        .done-item .done-info {
-            flex: 1;
-            min-width: 0;
-        }
-        .done-item .done-name {
-            font-size: 14px;
-            font-weight: 800;
-            color: var(--text);
-        }
-        .done-item .done-name .done-cat {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--text-light);
-        }
-        .done-item .done-meta {
-            font-size: 11px;
-            color: var(--text-lighter);
-            font-weight: 600;
-            margin-top: 2px;
-        }
-        .done-item .done-stats {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-shrink: 0;
-        }
-        .done-item .done-count {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--text-light);
-        }
+        .done-item .done-check svg { width: 15px; height: 15px; }
+        .done-item .done-info { flex: 1; min-width: 0; }
+        .done-item .done-name { font-size: 14px; font-weight: 800; color: var(--text); }
+        .done-item .done-name .done-cat { font-size: 12px; font-weight: 700; color: var(--text-light); }
+        .done-item .done-meta { font-size: 11px; color: var(--text-lighter); font-weight: 600; margin-top: 2px; }
+        .done-item .done-stats { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+        .done-item .done-count { font-size: 12px; font-weight: 700; color: var(--text-light); }
         .done-item .done-rate {
             font-size: 15px;
             font-weight: 800;
@@ -500,15 +330,9 @@
             border-radius: 8px;
             background: #fff;
         }
-        .done-item .done-rate.rate-good {
-            color: var(--green-600);
-        }
-        .done-item .done-rate.rate-mid {
-            color: #f57f17;
-        }
-        .done-item .done-rate.rate-low {
-            color: var(--red-deep);
-        }
+        .done-item .done-rate.rate-good { color: var(--green-600); }
+        .done-item .done-rate.rate-mid { color: #f57f17; }
+        .done-item .done-rate.rate-low { color: var(--red-deep); }
         .done-item .done-badge {
             font-size: 10px;
             font-weight: 700;
@@ -528,17 +352,10 @@
             font-size: 12px;
             transition: all .2s;
         }
-        .done-item .done-undo:hover {
-            color: var(--red-deep);
-            background: var(--red);
-        }
+        .done-item .done-undo:hover { color: var(--red-deep); background: var(--red); }
 
-        #inputTable {
-            table-layout: fixed;
-        }
-        #inputTable td {
-            padding: 4px;
-        }
+        #inputTable { table-layout: fixed; }
+        #inputTable td { padding: 4px; }
         .input-cell {
             width: 100%;
             padding: 6px 8px;
@@ -557,31 +374,12 @@
             background: var(--green-50);
             box-shadow: 0 0 0 2px rgba(111, 184, 138, .15);
         }
-        .input-cell.completed {
-            border-color: var(--green-400);
-            background: var(--green-100);
-        }
-        .input-qno {
-            text-align: center;
-            font-weight: 700;
-            font-size: 14px;
-            color: var(--text-light);
-        }
-        .input-result {
-            text-align: center;
-            font-weight: 800;
-            font-size: 14px;
-        }
-        .input-result.right {
-            color: var(--green-600);
-        }
-        .input-result.wrong {
-            color: var(--red-deep);
-        }
-        .input-result.none {
-            color: var(--text-lighter);
-            font-size: 12px;
-        }
+        .input-cell.completed { border-color: var(--green-400); background: var(--green-100); }
+        .input-qno { text-align: center; font-weight: 700; font-size: 14px; color: var(--text-light); }
+        .input-result { text-align: center; font-weight: 800; font-size: 14px; }
+        .input-result.right { color: var(--green-600); }
+        .input-result.wrong { color: var(--red-deep); }
+        .input-result.none { color: var(--text-lighter); font-size: 12px; }
 
         .mark-cell {
             width: 22px;
@@ -592,14 +390,8 @@
             cursor: pointer;
             transition: all .15s;
         }
-        .mark-cell:hover {
-            border-color: #f9a825;
-        }
-        .mark-cell.marked {
-            background: #fdd835;
-            border-color: #f9a825;
-            box-shadow: 0 1px 3px rgba(249, 168, 37, .4);
-        }
+        .mark-cell:hover { border-color: #f9a825; }
+        .mark-cell.marked { background: #fdd835; border-color: #f9a825; box-shadow: 0 1px 3px rgba(249, 168, 37, .4); }
 
         .ch-table-group {
             margin-bottom: 16px;
@@ -618,13 +410,7 @@
             flex-wrap: wrap;
             gap: 6px;
         }
-        .ch-table-head .ch-left {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex: 1;
-            min-width: 0;
-        }
+        .ch-table-head .ch-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
         .ch-table-head .ch-name {
             font-size: 14px;
             font-weight: 800;
@@ -634,15 +420,8 @@
             gap: 6px;
             flex-wrap: wrap;
         }
-        .ch-table-head .ch-rate {
-            font-size: 13px;
-            font-weight: 800;
-        }
-        .ch-table-head .ch-toggle {
-            font-size: 11px;
-            color: var(--text-light);
-            font-weight: 600;
-        }
+        .ch-table-head .ch-rate { font-size: 13px; font-weight: 800; }
+        .ch-table-head .ch-toggle { font-size: 11px; color: var(--text-light); font-weight: 600; }
         .ch-table-head .ch-done-badge {
             font-size: 10px;
             font-weight: 700;
@@ -663,16 +442,9 @@
             transition: all .2s;
             line-height: 1;
         }
-        .ch-delete-btn:hover {
-            color: var(--red-deep);
-            background: var(--red);
-        }
-        .ch-table-body {
-            display: none;
-        }
-        .ch-table-body.open {
-            display: block;
-        }
+        .ch-delete-btn:hover { color: var(--red-deep); background: var(--red); }
+        .ch-table-body { display: none; }
+        .ch-table-body.open { display: block; }
         .quiz-table {
             width: 100%;
             border-collapse: collapse;
@@ -693,36 +465,14 @@
             border-bottom: 1px solid var(--border);
             color: var(--text);
         }
-        .quiz-table tr:last-child td {
-            border-bottom: none;
-        }
-        .quiz-table .td-mine {
-            font-weight: 700;
-            font-size: 15px;
-        }
-        .quiz-table .td-correct {
-            font-weight: 700;
-            font-size: 15px;
-            color: var(--green-600);
-        }
-        .quiz-table .td-right {
-            color: var(--green-600);
-            font-weight: 800;
-        }
-        .quiz-table .td-wrong {
-            color: var(--red-deep);
-            font-weight: 800;
-        }
-        .quiz-table .td-empty {
-            color: var(--text-lighter);
-            font-size: 12px;
-        }
-        .quiz-table tr.wrong-row {
-            background: #fff8f8;
-        }
-        .quiz-table tr.right-row {
-            background: var(--green-50);
-        }
+        .quiz-table tr:last-child td { border-bottom: none; }
+        .quiz-table .td-mine { font-weight: 700; font-size: 15px; }
+        .quiz-table .td-correct { font-weight: 700; font-size: 15px; color: var(--green-600); }
+        .quiz-table .td-right { color: var(--green-600); font-weight: 800; }
+        .quiz-table .td-wrong { color: var(--red-deep); font-weight: 800; }
+        .quiz-table .td-empty { color: var(--text-lighter); font-size: 12px; }
+        .quiz-table tr.wrong-row { background: #fff8f8; }
+        .quiz-table tr.right-row { background: var(--green-50); }
         .ch-summary {
             padding: 8px 14px;
             background: var(--green-50);
@@ -754,61 +504,23 @@
             align-items: center;
             gap: 6px;
         }
-        .done-action-area .done-hint svg {
-            width: 20px;
-            height: 20px;
-            flex-shrink: 0;
-        }
-        .done-action-area .done-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
+        .done-action-area .done-hint svg { width: 20px; height: 20px; flex-shrink: 0; }
+        .done-action-area .done-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
         @media (max-width: 768px) {
-            .sync-bar {
-                font-size: 11px;
-            }
-            .top-bar {
-                padding: 12px 16px 8px;
-                margin-top: 30px;
-            }
-            .top-bar .name {
-                font-size: 16px;
-            }
-            .main {
-                padding: 0 12px 80px;
-            }
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-            .stat-table {
-                font-size: 11px;
-            }
-            .stat-table th,
-            .stat-table td {
-                padding: 6px 4px;
-            }
-            .overview-item .num {
-                font-size: 24px;
-            }
-            .done-action-area {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .done-action-area .done-actions {
-                justify-content: stretch;
-            }
-            .done-action-area .done-actions .btn {
-                flex: 1;
-            }
-            .ch-table-head {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .ch-table-head .ch-left {
-                flex-wrap: wrap;
-            }
+            .sync-bar { font-size: 11px; }
+            .top-bar { padding: 12px 16px 8px; margin-top: 30px; }
+            .top-bar .name { font-size: 16px; }
+            .main { padding: 0 12px 80px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .stat-table { font-size: 11px; }
+            .stat-table th, .stat-table td { padding: 6px 4px; }
+            .overview-item .num { font-size: 24px; }
+            .done-action-area { flex-direction: column; align-items: stretch; }
+            .done-action-area .done-actions { justify-content: stretch; }
+            .done-action-area .done-actions .btn { flex: 1; }
+            .ch-table-head { flex-direction: column; align-items: stretch; }
+            .ch-table-head .ch-left { flex-wrap: wrap; }
         }
     </style>
 </head>
@@ -944,8 +656,8 @@
         // ============================================================
         //  🔑 配置区 - 请填入你的 JSONBin 信息
         // ============================================================
-        const JSONBIN_BIN_ID = '6a803a9bda38895dfee7e4f6';      // 如：5f8a9b...
-        const JSONBIN_API_KEY = '$2a$10$Ix.1G7lvtweKGC5cZHyXoe41OVhXMiRtp.Eq05dcmcZWW5pF8abe6';    // 如：$2a$10$...
+        const JSONBIN_BIN_ID = '6a803a9bda38895dfee7e4f6';
+        const JSONBIN_API_KEY = '$2a$10$Ix.1G7lvtweKGC5cZHyXoe41OVhXMiRtp.Eq05dcmcZWW5pF8abe6';
 
         // ============================================================
         //  📦 数据存储层（基于 JSONBin.io）
@@ -977,7 +689,6 @@
             cache: [],
             loaded: false,
 
-            // 加载数据
             load: function() {
                 var self = this;
                 var url = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`;
@@ -1000,7 +711,6 @@
                 })
                 .catch(err => {
                     console.warn('[DataStore] 远程加载失败:', err);
-                    // 降级使用本地缓存
                     var local = lsGet(LS_KEY);
                     if (local && local.length > 0) {
                         self.cache = local;
@@ -1014,7 +724,6 @@
                 });
             },
 
-            // 保存整个数组到远程
             _saveToRemote: function() {
                 var self = this;
                 var url = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
@@ -1038,18 +747,15 @@
                 });
             },
 
-            // 查询（从本地缓存）
             query: function(filterFn) {
                 return this.cache.filter(filterFn);
             },
 
-            // 添加一条记录
             add: function(item) {
                 var self = this;
                 item._id = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
                 self.cache.push(item);
                 lsSet(LS_KEY, self.cache);
-                // 异步保存到远程
                 self._saveToRemote().then(success => {
                     if (success) toast('✅ 数据已同步到云端');
                     else toast('⚠️ 数据已存本地，联网后自动同步');
@@ -1057,7 +763,6 @@
                 return Promise.resolve(item);
             },
 
-            // 更新一条记录
             update: function(item) {
                 var self = this;
                 var idx = self.cache.findIndex(x => x._id === item._id);
@@ -1071,7 +776,6 @@
                 return Promise.resolve(item);
             },
 
-            // 删除一条记录
             remove: function(id) {
                 var self = this;
                 self.cache = self.cache.filter(x => x._id !== id);
@@ -1082,17 +786,14 @@
         };
 
         // ============================================================
-        //  🧩 业务逻辑（完全保留，只依赖 DataStore 接口）
+        //  🧩 业务逻辑
         // ============================================================
         var DT_QUIZ = '做题记录';
 
         function parseQuizContent(content) {
             if (!content) return { qno: 0, myAns: '', correctAns: '', isCorrect: '错' };
             var parts = content.split('|');
-            var qno = 0,
-                myAns = '',
-                correctAns = '',
-                isCorrect = '错';
+            var qno = 0, myAns = '', correctAns = '', isCorrect = '错';
             parts.forEach(function(p) {
                 if (p.indexOf('第') === 0 && p.indexOf('题') > 0) {
                     var m = p.match(/第(\d+)题/);
@@ -1135,16 +836,11 @@
 
         function deleteChapter(cat, chapter) {
             var records = getChapterRecords(cat, chapter);
-            if (records.length === 0) {
-                toast('该章节没有记录');
-                return;
-            }
+            if (records.length === 0) { toast('该章节没有记录'); return; }
             if (!confirm('确定要删除章节「' + chapter + '」的全部 ' + records.length + ' 条做题记录吗？\n此操作不可撤销！')) return;
 
             setSyncState('syncing', '正在删除...');
-            var promises = records.map(function(r) {
-                return DataStore.remove(r._id);
-            });
+            var promises = records.map(function(r) { return DataStore.remove(r._id); });
 
             Promise.all(promises).then(function() {
                 toast('已删除章节「' + chapter + '」的全部记录');
@@ -1166,8 +862,7 @@
             var cats = {};
             var chapters = {};
             var doneChapters = {};
-            var totalCorrect = 0,
-                totalAll = 0;
+            var totalCorrect = 0, totalAll = 0;
 
             records.forEach(function(r) {
                 var parsed = parseQuizContent(r.content);
@@ -1205,30 +900,21 @@
             var totalRate = totalAll > 0 ? Math.round(totalCorrect / totalAll * 100) : 0;
             var rateColor = totalRate >= 70 ? 'var(--green-500)' : totalRate >= 50 ? '#f57f17' : 'var(--red-deep)';
             var overviewHtml = '';
-            overviewHtml += '<div class="overview-item" style="background:var(--green-50)"><div class="num" style="color:' +
-                rateColor + '">' + totalRate +
-                '%</div><div class="lbl">总正确率</div></div>';
-            overviewHtml += '<div class="overview-item" style="background:var(--blue-100)"><div class="num" style="color:#1565c0">' +
-                totalAll + '</div><div class="lbl">总题数</div></div>';
-            overviewHtml += '<div class="overview-item" style="background:var(--green-100)"><div class="num" style="color:var(--green-600)">' +
-                totalCorrect + '</div><div class="lbl">正确数</div></div>';
-            overviewHtml += '<div class="overview-item" style="background:var(--red)"><div class="num" style="color:#fff">' +
-                (totalAll - totalCorrect) + '</div><div class="lbl" style="color:#fff">错误数</div></div>';
+            overviewHtml += '<div class="overview-item" style="background:var(--green-50)"><div class="num" style="color:' + rateColor + '">' + totalRate + '%</div><div class="lbl">总正确率</div></div>';
+            overviewHtml += '<div class="overview-item" style="background:var(--blue-100)"><div class="num" style="color:#1565c0">' + totalAll + '</div><div class="lbl">总题数</div></div>';
+            overviewHtml += '<div class="overview-item" style="background:var(--green-100)"><div class="num" style="color:var(--green-600)">' + totalCorrect + '</div><div class="lbl">正确数</div></div>';
+            overviewHtml += '<div class="overview-item" style="background:var(--red)"><div class="num" style="color:#fff">' + (totalAll - totalCorrect) + '</div><div class="lbl" style="color:#fff">错误数</div></div>';
             document.getElementById('quizOverview').innerHTML = overviewHtml;
 
             var catHtml = '';
             Object.keys(cats).sort().forEach(function(cat) {
                 var s = cats[cat];
                 var rate = s.total > 0 ? Math.round(s.correct / s.total * 100) : 0;
-                var barColor = rate >= 70 ? 'linear-gradient(90deg,var(--green-400),var(--green-500))' : rate >= 50 ?
-                    'linear-gradient(90deg,#ffcc80,#ffa726)' : 'linear-gradient(90deg,var(--red),var(--red-deep))';
+                var barColor = rate >= 70 ? 'linear-gradient(90deg,var(--green-400),var(--green-500))' : rate >= 50 ? 'linear-gradient(90deg,#ffcc80,#ffa726)' : 'linear-gradient(90deg,var(--red),var(--red-deep))';
                 var rc = rate >= 70 ? 'var(--green-500)' : rate >= 50 ? '#f57f17' : 'var(--red-deep)';
                 catHtml += '<div class="progress-wrap">' +
-                    '<div class="progress-label"><span style="font-weight:700">' + cat +
-                    '</span><span style="color:' + rc + ';font-weight:800">' + s.correct + '/' + s.total + ' (' + rate +
-                    '%)</span></div>' +
-                    '<div class="progress-bar"><div class="progress-fill" style="width:' + rate +
-                    '%;background:' + barColor + '"></div></div></div>';
+                    '<div class="progress-label"><span style="font-weight:700">' + cat + '</span><span style="color:' + rc + ';font-weight:800">' + s.correct + '/' + s.total + ' (' + rate + '%)</span></div>' +
+                    '<div class="progress-bar"><div class="progress-fill" style="width:' + rate + '%;background:' + barColor + '"></div></div></div>';
             });
             document.getElementById('quizCatStats').innerHTML = catHtml || '<div class="empty">暂无数据</div>';
 
@@ -1247,16 +933,13 @@
                     doneHtml += '<div class="done-item">' +
                         '<div class="done-check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M5 12l5 5 9-9"/></svg></div>' +
                         '<div class="done-info">' +
-                        '<div class="done-name">' + dc.cat + ' <span class="done-cat">/</span> ' + dc.ch +
-                        ' <span class="done-badge">✅ 已完成</span></div>' +
-                        '<div class="done-meta">共 ' + total + ' 题 · 正确 ' + correct + ' 题 · 错误 ' + (total - correct) +
-                        ' 题</div>' +
+                        '<div class="done-name">' + dc.cat + ' <span class="done-cat">/</span> ' + dc.ch + ' <span class="done-badge">✅ 已完成</span></div>' +
+                        '<div class="done-meta">共 ' + total + ' 题 · 正确 ' + correct + ' 题 · 错误 ' + (total - correct) + ' 题</div>' +
                         '</div>' +
                         '<div class="done-stats">' +
                         '<span class="done-count">' + correct + '/' + total + '</span>' +
                         '<span class="done-rate ' + rateClass + '">' + rate + '%</span>' +
-                        '<button class="done-undo" onclick="undoChapterDone(\'' + dc.cat.replace(/'/g, "\\'") +
-                        '\',\'' + dc.ch.replace(/'/g, "\\'") + '\')" title="取消完成">↩</button>' +
+                        '<button class="done-undo" onclick="undoChapterDone(\'' + dc.cat.replace(/'/g, "\\'") + '\',\'' + dc.ch.replace(/'/g, "\\'") + '\')" title="取消完成">↩</button>' +
                         '</div>' +
                         '</div>';
                 });
@@ -1269,17 +952,14 @@
             var activeQuizCat = window._quizCat || '全部';
             var tabHtml = '';
             catTabs.forEach(function(c) {
-                tabHtml += '<div class="cat-tab' + (c === activeQuizCat ? ' active' : '') +
-                    '" onclick="switchQuizCat(\'' + c.replace(/'/g, "\\'") + '\')">' + c + '</div>';
+                tabHtml += '<div class="cat-tab' + (c === activeQuizCat ? ' active' : '') + '" onclick="switchQuizCat(\'' + c.replace(/'/g, "\\'") + '\')">' + c + '</div>';
             });
             document.getElementById('quizCats').innerHTML = tabHtml;
 
             var tableHtml = '';
-            var filteredChKeys = chKeys.filter(function(k) { return activeQuizCat === '全部' || chapters[k].cat ===
-                    activeQuizCat; });
+            var filteredChKeys = chKeys.filter(function(k) { return activeQuizCat === '全部' || chapters[k].cat === activeQuizCat; });
             if (filteredChKeys.length === 0) {
-                tableHtml =
-                    '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><div>暂无做题记录</div></div>';
+                tableHtml = '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><div>暂无做题记录</div></div>';
             } else {
                 filteredChKeys.forEach(function(k, idx) {
                     var s = chapters[k];
@@ -1287,9 +967,7 @@
                     var rateClass = rate >= 70 ? 'rate-good' : rate >= 50 ? 'rate-mid' : 'rate-low';
                     var isOpen = (window._openChapters && window._openChapters[k]) || false;
                     var chapterDone = isChapterDone(s.cat, s.ch);
-                    var doneBadge = chapterDone ?
-                        '<span class="ch-done-badge">✅ 已完成</span>' :
-                        '';
+                    var doneBadge = chapterDone ? '<span class="ch-done-badge">✅ 已完成</span>' : '';
                     tableHtml += '<div class="ch-table-group">' +
                         '<div class="ch-table-head" onclick="toggleChTable(\'' + k.replace(/'/g, "\\'") + '\')">' +
                         '<div class="ch-left">' +
@@ -1299,12 +977,9 @@
                         '</div>' +
                         '</div>' +
                         '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-                        '<span class="ch-rate ' + rateClass + '">' + s.correct + '/' + s.total + ' (' + rate +
-                        '%)</span>' +
+                        '<span class="ch-rate ' + rateClass + '">' + s.correct + '/' + s.total + ' (' + rate + '%)</span>' +
                         '<span class="ch-toggle">' + (isOpen ? '收起 ▲' : '展开 ▼') + '</span>' +
-                        '<button class="ch-delete-btn" onclick="event.stopPropagation(); deleteChapter(\'' +
-                        s.cat.replace(/'/g, "\\'") + '\',\'' + s.ch.replace(/'/g, "\\'") +
-                        '\')" title="删除该章节所有记录">🗑️</button>' +
+                        '<button class="ch-delete-btn" onclick="event.stopPropagation(); deleteChapter(\'' + s.cat.replace(/'/g, "\\'") + '\',\'' + s.ch.replace(/'/g, "\\'") + '\')" title="删除该章节所有记录">🗑️</button>' +
                         '</div>' +
                         '</div>' +
                         '<div class="ch-table-body' + (isOpen ? ' open' : '') + '" id="chBody-' + idx + '">' +
@@ -1313,8 +988,7 @@
                         '</tr></thead><tbody>';
                     s.records.sort(function(a, b) { return a.p.qno - b.p.qno; });
                     s.records.forEach(function(item) {
-                        var p = item.p,
-                            r = item.r;
+                        var p = item.p, r = item.r;
                         var isC = p.isCorrect === '对';
                         var mineDisplay = p.myAns || '<span class="td-empty">未填</span>';
                         var correctDisplay = p.correctAns || '<span class="td-empty">—</span>';
@@ -1322,15 +996,12 @@
                             '<td>第' + p.qno + '题</td>' +
                             '<td class="td-mine">' + mineDisplay + '</td>' +
                             '<td class="td-correct">' + correctDisplay + '</td>' +
-                            '<td class="' + (isC ? 'td-right' : 'td-wrong') + '">' + (isC ? '✓ 对' : '✗ 错') +
-                            '</td>' +
+                            '<td class="' + (isC ? 'td-right' : 'td-wrong') + '">' + (isC ? '✓ 对' : '✗ 错') + '</td>' +
                             '<td><div class="mark-cell" onclick="toggleMark(this)"></div></td>' +
                             '</tr>';
                     });
                     tableHtml += '</tbody></table>';
-                    tableHtml += '<div class="ch-summary"><span>共 ' + s.total + ' 题 · 正确 ' + s.correct +
-                        ' 题 · 错误 ' + (s.total - s.correct) +
-                        ' 题</span><span class="' + rateClass + '">正确率 ' + rate + '%</span></div>';
+                    tableHtml += '<div class="ch-summary"><span>共 ' + s.total + ' 题 · 正确 ' + s.correct + ' 题 · 错误 ' + (s.total - s.correct) + ' 题</span><span class="' + rateClass + '">正确率 ' + rate + '%</span></div>';
                     tableHtml += '</div></div>';
                 });
             }
@@ -1345,8 +1016,7 @@
             renderQuizData();
         }
 
-        function switchQuizCat(cat) { window._quizCat = cat;
-            renderQuizData(); }
+        function switchQuizCat(cat) { window._quizCat = cat; renderQuizData(); }
 
         var INPUT_ROWS = [];
         var INPUT_QNO_START = 1;
@@ -1362,14 +1032,12 @@
             if (tableWrap && !tableWrap._focusGuard) {
                 tableWrap._focusGuard = true;
                 tableWrap.addEventListener('focusin', function(e) {
-                    if (_enterTarget && e.target && e.target.classList && e.target.classList.contains(
-                            'input-cell')) {
+                    if (_enterTarget && e.target && e.target.classList && e.target.classList.contains('input-cell')) {
                         var aField = e.target.getAttribute('data-field');
                         var aIdx = parseInt(e.target.getAttribute('data-idx'));
                         var expectedField = _enterTarget.col === 'mine' ? 'myAns' : 'correctAns';
                         if (aField !== expectedField || aIdx !== _enterTarget.idx) {
-                            var correct = document.querySelector('.input-' + _enterTarget.col +
-                                '[data-idx="' + _enterTarget.idx + '"]');
+                            var correct = document.querySelector('.input-' + _enterTarget.col + '[data-idx="' + _enterTarget.idx + '"]');
                             if (correct) {
                                 setTimeout(function() { correct.focus(); }, 0);
                             }
@@ -1385,8 +1053,7 @@
                         var aIdx = active ? parseInt(active.getAttribute('data-idx')) : -1;
                         var expectedField = expected.col === 'mine' ? 'myAns' : 'correctAns';
                         if (aField !== expectedField || aIdx !== expected.idx) {
-                            var correct = document.querySelector('.input-' + expected.col +
-                                '[data-idx="' + expected.idx + '"]');
+                            var correct = document.querySelector('.input-' + expected.col + '[data-idx="' + expected.idx + '"]');
                             if (correct) correct.focus();
                         }
                     }
@@ -1405,12 +1072,8 @@
             var completedClass = (row.myAns && row.correctAns) ? ' completed' : '';
             return '<tr>' +
                 '<td><div class="input-qno">第' + row.qno + '题</div></td>' +
-                '<td><input type="text" class="input-cell input-mine' + completedClass +
-                '" maxlength="2" value="' + row.myAns + '" placeholder="A" data-idx="' + idx +
-                '" data-field="myAns" tabindex="-1" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"></td>' +
-                '<td><input type="text" class="input-cell input-correct' + completedClass +
-                '" maxlength="2" value="' + row.correctAns + '" placeholder="A" data-idx="' + idx +
-                '" data-field="correctAns" tabindex="-1" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"></td>' +
+                '<td><input type="text" class="input-cell input-mine' + completedClass + '" maxlength="2" value="' + row.myAns + '" placeholder="A" data-idx="' + idx + '" data-field="myAns" tabindex="-1" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"></td>' +
+                '<td><input type="text" class="input-cell input-correct' + completedClass + '" maxlength="2" value="' + row.correctAns + '" placeholder="A" data-idx="' + idx + '" data-field="correctAns" tabindex="-1" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"></td>' +
                 '<td><div class="input-result ' + resultClass + '">' + resultText + '</div></td>' +
                 '<td><div class="mark-cell" data-idx="' + idx + '" onclick="toggleMark(this)"></div></td>' +
                 '</tr>';
@@ -1498,8 +1161,7 @@
                 var aIdx = active ? parseInt(active.getAttribute('data-idx')) : -1;
                 var expectedField = expected.col === 'mine' ? 'myAns' : 'correctAns';
                 if (aField !== expectedField || aIdx !== expected.idx) {
-                    var correct = document.querySelector('.input-' + expected.col + '[data-idx="' + expected
-                        .idx + '"]');
+                    var correct = document.querySelector('.input-' + expected.col + '[data-idx="' + expected.idx + '"]');
                     if (correct) correct.focus();
                 }
             }, 50);
@@ -1519,8 +1181,7 @@
                     addInputRow(field);
                 } else {
                     targetIdx = idx + 1;
-                    var nextInput = document.querySelector('.input-' + targetCol + '[data-idx="' + targetIdx +
-                        '"]');
+                    var nextInput = document.querySelector('.input-' + targetCol + '[data-idx="' + targetIdx + '"]');
                     if (nextInput) nextInput.focus();
                 }
                 _enterTarget = { col: targetCol, idx: targetIdx };
@@ -1536,16 +1197,14 @@
                     e.preventDefault();
                     var prevIdx = idx - 1;
                     removeInputRow(idx);
-                    var prev = document.querySelector('.input-' + (field === 'myAns' ? 'mine' : 'correct') +
-                        '[data-idx="' + prevIdx + '"]');
+                    var prev = document.querySelector('.input-' + (field === 'myAns' ? 'mine' : 'correct') + '[data-idx="' + prevIdx + '"]');
                     if (prev) prev.focus();
                 }
             }
         }
 
         function removeInputRow(idx) {
-            if (INPUT_ROWS.length <= 1) { INPUT_ROWS[0] = { qno: 1, myAns: '', correctAns: '' };
-                renderInputTable(); return; }
+            if (INPUT_ROWS.length <= 1) { INPUT_ROWS[0] = { qno: 1, myAns: '', correctAns: '' }; renderInputTable(); return; }
             INPUT_ROWS.splice(idx, 1);
             INPUT_ROWS.forEach(function(r, i) { r.qno = INPUT_QNO_START + i; });
             renderInputTable();
@@ -1557,8 +1216,7 @@
             var wrong = filled.length - correct;
             var rate = filled.length > 0 ? Math.round(correct / filled.length * 100) : 0;
             var rateColor = rate >= 70 ? 'var(--green-600)' : rate >= 50 ? '#f57f17' : 'var(--red-deep)';
-            var html = '<span>已填 ' + filled.length + ' / ' + INPUT_ROWS.length + ' 题 · ✓ ' + correct + ' · ✗ ' + wrong +
-                '</span>' +
+            var html = '<span>已填 ' + filled.length + ' / ' + INPUT_ROWS.length + ' 题 · ✓ ' + correct + ' · ✗ ' + wrong + '</span>' +
                 '<span style="color:' + rateColor + '">正确率 ' + rate + '%</span>';
             document.getElementById('inputStats').innerHTML = html;
         }
@@ -1581,8 +1239,7 @@
         function saveInputBatch() {
             var cat = document.getElementById('quizCat').value;
             var chapter = document.getElementById('quizChapter').value.trim();
-            if (!chapter) { toast('请输入章节名');
-                document.getElementById('quizChapter').focus(); return; }
+            if (!chapter) { toast('请输入章节名'); document.getElementById('quizChapter').focus(); return; }
             var valid = INPUT_ROWS.filter(function(r) { return r.myAns && r.correctAns; });
             if (valid.length === 0) { toast('请至少填写一条完整的做题记录（我的选项+正确答案）'); return; }
             var promises = valid.map(function(r) {
@@ -1616,32 +1273,18 @@
         function markChapterDone() {
             var cat = document.getElementById('quizCat').value;
             var chapter = document.getElementById('quizChapter').value.trim();
-            if (!chapter) {
-                toast('请先输入章节名');
-                document.getElementById('quizChapter').focus();
-                return;
-            }
+            if (!chapter) { toast('请先输入章节名'); document.getElementById('quizChapter').focus(); return; }
             var records = getChapterRecords(cat, chapter);
-            if (records.length === 0) {
-                toast('该章节暂无做题记录，请先保存题目');
-                return;
-            }
+            if (records.length === 0) { toast('该章节暂无做题记录，请先保存题目'); return; }
             var invalid = records.filter(function(r) {
                 var parsed = parseQuizContent(r.content);
                 return !parsed.myAns || !parsed.correctAns;
             });
-            if (invalid.length > 0) {
-                toast('有 ' + invalid.length + ' 条记录缺少选项或答案，请先补充完整');
-                return;
-            }
+            if (invalid.length > 0) { toast('有 ' + invalid.length + ' 条记录缺少选项或答案，请先补充完整'); return; }
             var allDone = records.every(function(r) { return r.done === true; });
-            if (allDone) {
-                toast('该章节已标记为已完成 ✓');
-                return;
-            }
+            if (allDone) { toast('该章节已标记为已完成 ✓'); return; }
             var stats = getChapterStats(cat, chapter);
-            if (!confirm('章节「' + chapter + '」共 ' + stats.total + ' 题，正确 ' + stats.correct + ' 题，正确率 ' + stats.rate +
-                    '%\n确定标记为已完成吗？')) return;
+            if (!confirm('章节「' + chapter + '」共 ' + stats.total + ' 题，正确 ' + stats.correct + ' 题，正确率 ' + stats.rate + '%\n确定标记为已完成吗？')) return;
 
             setSyncState('syncing', '标记中...');
             var promises = records.map(function(r) {
@@ -1685,14 +1328,10 @@
         function showChapterStatus() {
             var cat = document.getElementById('quizCat').value;
             var chapter = document.getElementById('quizChapter').value.trim();
-            if (!chapter) { toast('请先输入章节名');
-                document.getElementById('quizChapter').focus(); return; }
+            if (!chapter) { toast('请先输入章节名'); document.getElementById('quizChapter').focus(); return; }
             var stats = getChapterStats(cat, chapter);
             var records = getChapterRecords(cat, chapter);
-            if (records.length === 0) {
-                toast('该章节暂无做题记录');
-                return;
-            }
+            if (records.length === 0) { toast('该章节暂无做题记录'); return; }
             var doneCount = records.filter(function(r) { return r.done; }).length;
             alert('📊 章节状态\n\n' +
                 '大类：' + cat + '\n' +
@@ -1701,11 +1340,6 @@
                 '正确数：' + stats.correct + '\n' +
                 '正确率：' + stats.rate + '%\n' +
                 '已完成：' + (stats.done ? '✅ 是' : '❌ 否') + ' (' + doneCount + '/' + records.length + ' 条标记完成)');
-        }
-
-        function delQuizRecord(id) {
-            DataStore.remove(id).then(function() { renderQuizData();
-                toast('已删除'); });
         }
 
         function toggleMark(el) {
@@ -1717,15 +1351,12 @@
             if (records.length === 0) { toast('暂无做题记录可同步'); return; }
 
             var groups = {};
-            var totalCorrect = 0,
-                totalAll = 0;
+            var totalCorrect = 0, totalAll = 0;
             records.forEach(function(r) {
                 var parsed = parseQuizContent(r.content);
                 var key = r.subject + ' > ' + r.title;
-                if (!groups[key]) groups[key] = { subject: r.subject, chapter: r.title, items: [], correct: 0,
-                    total: 0 };
-                groups[key].items.push({ qno: parsed.qno, myAns: parsed.myAns || '—', correctAns: parsed
-                        .correctAns, isCorrect: parsed.isCorrect });
+                if (!groups[key]) groups[key] = { subject: r.subject, chapter: r.title, items: [], correct: 0, total: 0 };
+                groups[key].items.push({ qno: parsed.qno, myAns: parsed.myAns || '—', correctAns: parsed.correctAns, isCorrect: parsed.isCorrect });
                 groups[key].total++;
                 if (parsed.isCorrect === '对') groups[key].correct++;
                 totalAll++;
@@ -1734,8 +1365,7 @@
 
             var md = '# 上岸工作台 · 做题记录\n\n';
             md += '**同步时间：** ' + new Date().toLocaleString('zh-CN') + '\n';
-            md += '**总题数：** ' + totalAll + ' 题 | **正确：** ' + totalCorrect + ' 题 | **正确率：** ' + (totalAll > 0 ?
-                Math.round(totalCorrect / totalAll * 100) : 0) + '%\n\n';
+            md += '**总题数：** ' + totalAll + ' 题 | **正确：** ' + totalCorrect + ' 题 | **正确率：** ' + (totalAll > 0 ? Math.round(totalCorrect / totalAll * 100) : 0) + '%\n\n';
             md += '---\n\n';
 
             Object.keys(groups).sort().forEach(function(key) {
@@ -1748,8 +1378,7 @@
                 md += '|------|---------|---------|------|\n';
                 g.items.forEach(function(item) {
                     var icon = item.isCorrect === '对' ? '✓' : '✗';
-                    md += '| 第' + item.qno + '题 | ' + item.myAns + ' | ' + item.correctAns + ' | ' + icon +
-                        ' |\n';
+                    md += '| 第' + item.qno + '题 | ' + item.myAns + ' | ' + item.correctAns + ' | ' + icon + ' |\n';
                 });
                 md += '\n';
             });
@@ -1767,17 +1396,14 @@
             }
 
             var hint = document.createElement('div');
-            hint.style.cssText =
-                'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--blue-600);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2);max-width:90%;text-align:center;line-height:1.6';
+            hint.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--blue-600);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2);max-width:90%;text-align:center;line-height:1.6';
             hint.innerHTML = '做题记录已整理完成（' + records.length + '条）<br>请回到对话对我说：<br>「同步到腾讯文档」';
             document.body.appendChild(hint);
             setTimeout(function() { hint.remove(); }, 5000);
         }
 
         var CAT_KEY = 'wb_shangan_cats_v1';
-        var DEFAULT_CATS = ['图推-第一节', '图推-第二节', '图推-第三节', '图推-第四节', '逻辑判断', '逻辑填空', '资料分析夸夸刷', '政治理论', '常识', '言语理解',
-            '数量关系', '资料分析'
-        ];
+        var DEFAULT_CATS = ['图推-第一节', '图推-第二节', '图推-第三节', '图推-第四节', '逻辑判断', '逻辑填空', '资料分析夸夸刷', '政治理论', '常识', '言语理解', '数量关系', '资料分析'];
 
         function getCats() {
             var cats = lsGet(CAT_KEY);
@@ -1811,8 +1437,7 @@
             var html = cats.map(function(c) {
                 return '<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;background:#fff;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600">' +
                     c +
-                    '<button type="button" onclick="removeCustomCat(\'' + c.replace(/'/g, "\\'") +
-                    '\')" style="border:none;background:transparent;color:var(--red-deep);cursor:pointer;padding:0 2px;font-size:14px;line-height:1">✕</button>' +
+                    '<button type="button" onclick="removeCustomCat(\'' + c.replace(/'/g, "\\'") + '\')" style="border:none;background:transparent;color:var(--red-deep);cursor:pointer;padding:0 2px;font-size:14px;line-height:1">✕</button>' +
                     '</span>';
             }).join('');
             document.getElementById('catList').innerHTML = html || '<span style="font-size:12px;color:var(--text-light)">暂无大类，请添加</span>';
@@ -1841,11 +1466,22 @@
             toast('已删除大类：' + name);
         }
 
+        // ============================================================
+        //  🚀 初始化 - 修复了输入表格不显示的问题
+        // ============================================================
         function init() {
             renderCatSelect();
             DataStore.load().then(function() {
                 renderQuizData();
-                initInputTable();
+                // 延迟执行，确保 DOM 渲染完成
+                setTimeout(function() {
+                    initInputTable();
+                }, 200);
+            }).catch(function() {
+                // 即使加载失败也尝试显示表格
+                setTimeout(function() {
+                    initInputTable();
+                }, 200);
             });
         }
 
