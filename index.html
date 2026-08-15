@@ -1,7 +1,6 @@
 <!DOCTYPE html>
-<!-- 本版本已适配 JSONBin 云端存储，手机平板数据自动同步 -->
-<!-- 已删除：已完成章节卡片、标记章节完成功能 -->
-<!-- 新增：做题明细中编辑/保存按钮，避免误触 -->
+<!-- 上岸工作台 · 做题数据（JSONBin 云端同步） -->
+<!-- 功能：多端同步、编辑/保存、删除章节、大类管理、腾讯文档导出 -->
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -11,7 +10,7 @@
     <meta name="theme-color" content="#b8e0d2">
     <title>上岸工作台·做题数据</title>
     <style>
-        /* ========== 样式（保留完整） ========== */
+        /* ====== 样式（完整版） ====== */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         :root { --green-50:#f0f9f4; --green-100:#dcf2e3; --green-200:#c4e6d1; --green-300:#a9dabb; --green-400:#8ccaa3; --green-500:#6fb88a; --green-600:#5aa877; --pink-100:#fce4ec; --pink-200:#f8bbd0; --pink-300:#f48fb1; --yellow-100:#fff9e6; --yellow-200:#fff3b8; --yellow-300:#ffe988; --blue-100:#e3f2fd; --blue-200:#bbdefb; --blue-300:#90caf9; --blue-600:#1565c0; --purple-100:#f3e5f5; --purple-200:#e1bee7; --orange-100:#fff3e0; --orange-200:#ffe0b2; --red:#ff8a80; --red-deep:#e53935; --text:#3d5a4e; --text-light:#6b8a7a; --text-lighter:#9bb5a5; --bg:#f0f9f4; --card:#ffffff; --border:#dcf2e3; --shadow:0 2px 12px rgba(111,184,138,.12); --radius:16px; --radius-sm:10px; --radius-xs:8px; }
         html, body { height:100%; }
@@ -355,6 +354,30 @@
                 return this.cache.filter(filterFn);
             },
 
+            // ★ 新增：批量添加（一次性添加多条，只保存一次）
+            addBatch: function(items) {
+                var self = this;
+                if (!Array.isArray(self.cache)) {
+                    console.warn('[DataStore] cache 不是数组，重置为空数组');
+                    self.cache = [];
+                }
+                items.forEach(function(item) {
+                    item._id = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6) + '_' + Math.random().toString(36).substr(2, 4);
+                    self.cache.push(item);
+                });
+                lsSet(LS_KEY, self.cache);
+                // 统一保存一次
+                return self._saveToRemote().then(function(success) {
+                    if (success) {
+                        toast('✅ 已保存 ' + items.length + ' 条记录到云端');
+                    } else {
+                        toast('⚠️ 数据已存本地，联网后自动同步');
+                    }
+                    return { success: success, count: items.length };
+                });
+            },
+
+            // 单条添加（保留，用于编辑等场景）
             add: function(item) {
                 var self = this;
                 if (!Array.isArray(self.cache)) {
@@ -475,7 +498,7 @@
         }
 
         // ============================================================
-        //  📊 渲染函数（已删除“已完成章节”相关代码）
+        //  📊 渲染函数（完整版）
         // ============================================================
         function renderQuizData() {
             var records = getQuizRecords();
@@ -929,6 +952,9 @@
             });
         }
 
+        // ============================================================
+        //  💾 批量保存（修复：使用 addBatch 避免覆盖）
+        // ============================================================
         function saveInputBatch() {
             var cat = document.getElementById('quizCat').value;
             var chapter = document.getElementById('quizChapter').value.trim();
@@ -946,10 +972,11 @@
             toast('⏳ 正在保存 ' + valid.length + ' 条记录...');
             setSyncState('syncing', '正在保存...');
 
-            var promises = valid.map(function(r) {
+            // 构建所有 item
+            var items = valid.map(function(r) {
                 var isCorrect = r.myAns === r.correctAns ? '对' : '错';
                 var content = '第' + r.qno + '题|我的答案:' + r.myAns + '|正确答案:' + r.correctAns + '|' + isCorrect;
-                return DataStore.add({
+                return {
                     dataType: DT_QUIZ,
                     subject: cat,
                     title: chapter,
@@ -958,31 +985,29 @@
                     correct: isCorrect === '对' ? 1 : 0,
                     rate: isCorrect === '对' ? 100 : 0,
                     done: false
-                });
+                };
             });
 
-            Promise.all(promises)
-                .then(function(results) {
-                    var allSuccess = results.every(r => r.success !== false);
-                    if (allSuccess) {
-                        toast('✅ 已保存 ' + results.length + ' 条做题记录');
-                    } else {
-                        toast('⚠️ 部分记录已存本地，请检查网络');
-                    }
-                    document.getElementById('quizChapter').value = '';
-                    initInputTable();
-                    renderQuizData();
-                    setSyncState('online');
-                })
-                .catch(function(err) {
-                    console.error('[saveInputBatch] 保存失败:', err);
-                    toast('❌ 保存失败：' + (err.message || '未知错误'));
-                    setSyncState('offline');
-                });
+            // 使用批量添加，只保存一次
+            DataStore.addBatch(items).then(function(result) {
+                if (result.success) {
+                    toast('✅ 已保存 ' + result.count + ' 条做题记录到云端');
+                } else {
+                    toast('⚠️ 数据已存本地，联网后自动同步');
+                }
+                document.getElementById('quizChapter').value = '';
+                initInputTable();
+                renderQuizData();
+                setSyncState('online');
+            }).catch(function(err) {
+                console.error('[saveInputBatch] 保存失败:', err);
+                toast('❌ 保存失败：' + (err.message || '未知错误'));
+                setSyncState('offline');
+            });
         }
 
         // ============================================================
-        //  📋 同步腾讯文档（保持原有功能）
+        //  📋 同步腾讯文档
         // ============================================================
         function syncToTencentDocs() {
             var records = getQuizRecords();
@@ -1024,17 +1049,18 @@
 
             try {
                 navigator.clipboard.writeText(window._syncToTencentDocsData).then(function() {
-                    toast('做题记录已复制到剪贴板，请对我说"同步到腾讯文档"');
+                    toast('做题记录已复制到剪贴板，请粘贴到腾讯文档');
                 }).catch(function() {
-                    toast('请对我说"同步到腾讯文档"');
+                    toast('请手动复制数据（已生成）');
                 });
             } catch (e) {
-                toast('请对我说"同步到腾讯文档"');
+                toast('请手动复制数据');
             }
 
+            // 显示提示框
             var hint = document.createElement('div');
             hint.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--blue-600);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2);max-width:90%;text-align:center;line-height:1.6';
-            hint.innerHTML = '做题记录已整理完成（' + records.length + '条）<br>请回到对话对我说：<br>「同步到腾讯文档」';
+            hint.innerHTML = '📋 数据已复制到剪贴板，请粘贴到腾讯文档';
             document.body.appendChild(hint);
             setTimeout(function() { hint.remove(); }, 5000);
         }
