@@ -377,7 +377,6 @@
                     self.cache.push(item);
                 });
                 lsSet(LS_KEY, self.cache);
-                // 统一保存一次
                 return self._saveToRemote().then(function(success) {
                     if (success) {
                         toast('✅ 已保存 ' + items.length + ' 条记录到云端');
@@ -408,6 +407,7 @@
                 });
             },
 
+            // 更新单条记录（保留，但我们将在 saveChapterEdit 中直接操作 cache）
             update: function(item) {
                 var self = this;
                 if (!Array.isArray(self.cache)) {
@@ -583,7 +583,7 @@
                     var isOpen = (window._openChapters && window._openChapters[k]) || false;
                     var isEditing = window._editingChapter === k;
 
-                    // ★ 编辑/保存按钮（保持不变）
+                    // ★ 编辑/保存按钮
                     var editBtnHtml = isEditing ?
                         '<button class="btn btn-sm btn-success" onclick="event.stopPropagation(); saveChapterEdit(\'' + k.replace(/'/g, "\\'") + '\')" style="padding:2px 10px;font-size:11px;min-height:28px;">💾 保存</button>' :
                         '<button class="btn btn-sm btn-soft" onclick="event.stopPropagation(); enterChapterEdit(\'' + k.replace(/'/g, "\\'") + '\')" style="padding:2px 10px;font-size:11px;min-height:28px;">✏️ 编辑</button>';
@@ -616,9 +616,11 @@
                         '</div>' +
                         '<div class="ch-table-body' + (isOpen ? ' open' : '') + '" id="chBody-' + idx + '">' +
                         '<table class="quiz-table"><thead><tr>' +
-                        '<th style="width:16%">题号</th>' +
-                        (isEditing ? '<th style="width:16%">大类</th><th style="width:16%">章节</th>' : '') +
-                        '<th style="width:16%">我的选项</th><th style="width:16%">正确答案</th><th style="width:16%">对错</th><th style="width:16%">标记</th>' +
+                        '<th style="width:20%">题号</th>' +
+                        '<th style="width:20%">我的选项</th>' +
+                        '<th style="width:20%">正确答案</th>' +
+                        '<th style="width:20%">对错</th>' +
+                        '<th style="width:20%">标记</th>' +
                         '</tr></thead><tbody>';
 
                     s.records.sort(function(a, b) { return a.p.qno - b.p.qno; });
@@ -627,12 +629,7 @@
                         var isC = p.isCorrect === '对';
 
                         if (isEditing) {
-                            // 编辑模式：每行显示分类输入框（可选）、选项输入框
-                            // 每行的大类和章节输入框便于单独修改，但为了简化，我们可以在头部统一修改，这里只显示选项输入
-                            // 我们也可以在头部统一修改，但也可以每行独立，这里选择头部统一修改，每行显示只读（避免混乱）
-                            // 但为了灵活性，我们也可以每行添加输入框，但会增加复杂度。这里我们采用头部统一修改的方式，每行只显示选项输入。
-                            // 但为了展示每行的大类和章节，可以显示只读，但没必要，因为头部已有。
-                            // 这里我们保持每行只显示题号、选项、答案、对错、标记，不显示分类（头部已有）
+                            // 编辑模式：显示输入框
                             var mineVal = p.myAns || '';
                             var correctVal = p.correctAns || '';
                             var mineInput = '<input type="text" class="edit-input td-mine" value="' + mineVal + '" maxlength="1" data-id="' + r._id + '" data-field="myAns" placeholder="A" style="width:40px;text-align:center;font-weight:700;font-size:15px;border:1px solid var(--border);border-radius:4px;padding:2px;background:#fff;text-transform:uppercase;">';
@@ -645,7 +642,7 @@
                                 '<td><div class="mark-cell" onclick="toggleMark(this)"></div></td>' +
                                 '</tr>';
                         } else {
-                            // 只读模式：只显示内容
+                            // 只读模式
                             var mineDisplay = p.myAns || '<span class="td-empty">未填</span>';
                             var correctDisplay = p.correctAns || '<span class="td-empty">—</span>';
                             tableHtml += '<tr class="' + (isC ? 'right-row' : 'wrong-row') + '">' +
@@ -675,7 +672,7 @@
         }
 
         // ============================================================
-        //  ✏️ 编辑/保存功能（支持修改分类）
+        //  ✏️ 编辑/保存功能（重构：一次性修改所有字段，保存一次）
         // ============================================================
         function toggleChTable(key) {
             if (!window._openChapters) window._openChapters = {};
@@ -692,9 +689,16 @@
         }
 
         function saveChapterEdit(chapterKey) {
-            // 1. 收集选项修改
+            // 1. 收集选项修改（从 .edit-input 中读取）
             var inputs = document.querySelectorAll('.ch-table-group[data-chapterkey="' + chapterKey + '"] .edit-input');
-            var updatePromises = [];
+            // 2. 收集分类修改（从头部输入框读取）
+            var catInput = document.querySelector('.ch-table-group[data-chapterkey="' + chapterKey + '"] .edit-cat-input');
+            var chInput = document.querySelector('.ch-table-group[data-chapterkey="' + chapterKey + '"] .edit-ch-input');
+
+            // 检查是否有任何修改
+            var hasChanges = false;
+
+            // ---- 处理选项修改 ----
             inputs.forEach(function(input) {
                 var id = input.dataset.id;
                 var field = input.dataset.field;
@@ -704,6 +708,7 @@
                 var record = DataStore.cache.find(function(r) { return r._id === id; });
                 if (!record) return;
 
+                // 解析当前 content
                 var parts = record.content.split('|');
                 var qno = 0, myAns = '', correctAns = '', isCorrect = '错';
                 parts.forEach(function(p) {
@@ -717,86 +722,75 @@
                 });
 
                 if (field === 'myAns') {
+                    if (myAns !== newVal) hasChanges = true;
                     myAns = newVal;
                 } else if (field === 'correctAns') {
+                    if (correctAns !== newVal) hasChanges = true;
                     correctAns = newVal;
                 }
 
                 var newIsCorrect = (myAns && correctAns && myAns === correctAns) ? '对' : '错';
                 var newContent = '第' + qno + '题|我的答案:' + myAns + '|正确答案:' + correctAns + '|' + newIsCorrect;
 
+                // 直接修改 cache 中的记录
                 record.content = newContent;
                 record.correct = (newIsCorrect === '对') ? 1 : 0;
                 record.rate = (newIsCorrect === '对') ? 100 : 0;
-
-                updatePromises.push(DataStore.update(record));
             });
 
-            // 2. 检查分类修改（头部输入框）
-            var catInput = document.querySelector('.ch-table-group[data-chapterkey="' + chapterKey + '"] .edit-cat-input');
-            var chInput = document.querySelector('.ch-table-group[data-chapterkey="' + chapterKey + '"] .edit-ch-input');
-            var catChanged = false, chChanged = false;
-            var newCat = '', newCh = '';
-            if (catInput) {
-                newCat = catInput.value.trim();
-                var originalCat = catInput.dataset.originalCat;
-                if (newCat && newCat !== originalCat) {
-                    catChanged = true;
-                } else {
-                    newCat = originalCat;
-                }
-            }
-            if (chInput) {
-                newCh = chInput.value.trim();
-                var originalCh = chInput.dataset.originalCh;
-                if (newCh && newCh !== originalCh) {
-                    chChanged = true;
-                } else {
-                    newCh = originalCh;
-                }
-            }
+            // ---- 处理分类修改 ----
+            var oldCat = catInput ? catInput.dataset.originalCat : '';
+            var oldCh = chInput ? chInput.dataset.originalCh : '';
+            var newCat = catInput ? catInput.value.trim() : oldCat;
+            var newCh = chInput ? chInput.value.trim() : oldCh;
+            var catChanged = (newCat && newCat !== oldCat);
+            var chChanged = (newCh && newCh !== oldCh);
 
-            // 如果分类变化，则更新该章节所有记录的 subject 和 title
             if (catChanged || chChanged) {
-                // 获取该章节所有记录（基于当前分组，但分组key是旧值，所以我们从缓存中找 subject==原cat && title==原ch 的记录）
-                // 为了准确，我们从 DataStore.cache 中查找
-                var oldCat = catInput ? catInput.dataset.originalCat : '';
-                var oldCh = chInput ? chInput.dataset.originalCh : '';
+                // 找到该章节所有记录（根据原始分类）
                 var recordsToUpdate = DataStore.cache.filter(function(r) {
                     return r.dataType === DT_QUIZ && r.subject === oldCat && r.title === oldCh;
                 });
-
                 if (recordsToUpdate.length > 0) {
                     recordsToUpdate.forEach(function(r) {
                         if (catChanged) r.subject = newCat;
                         if (chChanged) r.title = newCh;
-                        // 更新记录（调用update会保存）
-                        updatePromises.push(DataStore.update(r));
                     });
+                    hasChanges = true;
+                } else {
+                    toast('⚠️ 未找到要修改分类的记录');
                 }
             }
 
-            if (updatePromises.length === 0) {
+            if (!hasChanges) {
                 toast('没有修改需要保存');
+                // 退出编辑模式
+                window._editingChapter = null;
+                renderQuizData();
                 return;
             }
 
+            // ---- 保存整个 cache 到云端 ----
             setSyncState('syncing', '正在保存修改...');
-            Promise.all(updatePromises)
-                .then(function() {
-                    toast('✅ 已保存 ' + updatePromises.length + ' 项修改');
-                    window._editingChapter = null;
-                    // 重新加载数据并渲染
-                    DataStore.load().then(function() {
-                        renderQuizData();
-                        setSyncState('online');
-                    });
-                })
-                .catch(function(err) {
-                    console.error('[saveChapterEdit] 保存失败:', err);
-                    toast('❌ 保存失败，请重试');
-                    setSyncState('offline');
-                });
+            DataStore._saveToRemote().then(function(success) {
+                if (success) {
+                    toast('✅ 修改已保存到云端');
+                } else {
+                    toast('⚠️ 保存失败，数据已存本地，请检查网络');
+                }
+                // 退出编辑模式
+                window._editingChapter = null;
+                // 重新渲染（直接使用更新后的 cache）
+                renderQuizData();
+                setSyncState(success ? 'online' : 'offline');
+            }).catch(function(err) {
+                console.error('[saveChapterEdit] 保存失败:', err);
+                toast('❌ 保存失败：' + (err.message || '未知错误'));
+                setSyncState('offline');
+                // 仍然退出编辑模式，但数据可能未同步
+                window._editingChapter = null;
+                renderQuizData();
+            });
         }
 
         function toggleMark(el) {
@@ -1230,4 +1224,3 @@
     </script>
 </body>
 </html>
-
