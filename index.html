@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<!-- 上岸工作台 · 做题数据（JSONBin 云端同步） -->
-<!-- 功能：多端同步、编辑/保存（支持修改大类/章节）、删除章节、大类管理、腾讯文档导出 -->
+<!-- 上岸工作台 · 做题数据（Supabase 云端同步） -->
+<!-- 功能：多端同步、编辑/保存（支持修改选项/答案/大类/章节）、删除章节、大类管理、腾讯文档导出 -->
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -137,6 +137,7 @@
             .edit-cat-input, .edit-ch-input { width:100%; margin-bottom:4px; }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -156,6 +157,17 @@
     </div>
 
     <div class="main">
+
+        <!-- 一键搬家提示横幅（默认隐藏） -->
+        <div id="migrationBanner" class="card" style="display:none; background:var(--yellow-100); border-color:var(--yellow-200);">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                <div>
+                    <div style="font-size:14px; font-weight:800; color:#795548;">📦 发现本地旧数据</div>
+                    <div style="font-size:12px; color:#795548;">检测到手机浏览器里有未同步的做题记录，点击右侧按钮搬家到云端。</div>
+                </div>
+                <button class="btn btn-primary" onclick="migrateLocalToCloud()" style="padding:6px 16px; font-size:13px;">一键同步</button>
+            </div>
+        </div>
 
         <!-- 总览卡片 -->
         <div class="card">
@@ -247,13 +259,14 @@
 
     <script>
         // ============================================================
-        //  🔑 配置区 - 请填入你的 JSONBin 信息
+        //  🔑 Supabase 配置区（已自动为你填好）
         // ============================================================
-        const JSONBIN_BIN_ID = '6a8069eaf5f4af5e291a0696';      // 如：5f8a9b...
-        const JSONBIN_API_KEY = '$2a$10$5CP8aNxkTSQwYxrkBsQiPurAzPLruWerFI1ToxgcBiExkSOtdXiU.';    // 如：$2a$10$...
+        const SUPABASE_URL = 'https://bvhfcrgtmwooiufhrfzv.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_SC5N0w53oRo76C2nyo0GkA_q_cPF4Ax';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // ============================================================
-        //  📦 数据存储层（基于 JSONBin.io）
+        //  📦 数据存储层（基于 Supabase）
         // ============================================================
         var LS_KEY = 'wb_shangan_data_v1';
 
@@ -278,169 +291,178 @@
             window._toastTimer = setTimeout(function() { t.classList.remove('show'); }, 3500);
         }
 
+        // 将 Supabase 的数据格式转换为本地 UI 格式
+        function mapToLocal(item) {
+            return {
+                _id: item.id.toString(),
+                dataType: '做题记录',
+                subject: item.subject,
+                title: item.chapter, // 注意：Supabase建表时用的 chapter，UI里叫 title
+                content: item.content,
+                count: item.count || 1,
+                correct: item.correct || 0,
+                rate: item.rate || 0,
+                done: false
+            };
+        }
+
         var DataStore = {
             cache: [],
             loaded: false,
 
-            load: function() {
-                var self = this;
-                var url = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`;
-
+            // 加载数据（优先从 Supabase 拉取）
+            load: async function() {
                 setSyncState('syncing', '正在从云端加载...');
+                try {
+                    const { data, error } = await supabaseClient.from('quiz_records').select('*').order('created_at', { ascending: true });
+                    if (error) throw error;
 
-                return fetch(url, {
-                    headers: { 'X-Master-Key': JSONBIN_API_KEY }
-                })
-                .then(res => {
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    return res.json();
-                })
-                .then(data => {
-                    var record = data.record;
-                    if (Array.isArray(record)) {
-                        self.cache = record;
+                    if (data && data.length > 0) {
+                        this.cache = data.map(mapToLocal);
+                        lsSet(LS_KEY, this.cache); // 同步覆盖本地缓存
+                        setSyncState('online', '数据加载成功');
                     } else {
-                        console.warn('[DataStore] record 不是数组，类型:', typeof record);
-                        self.cache = [];
+                        // Supabase 里没数据，检查本地缓存
+                        const local = lsGet(LS_KEY);
+                        if (local && local.length > 0) {
+                            this.cache = local;
+                            setSyncState('offline', '检测到本地旧数据，等待同步');
+                        } else {
+                            this.cache = [];
+                            setSyncState('online', '暂无数据');
+                        }
                     }
-                    self.loaded = true;
-                    lsSet(LS_KEY, self.cache);
-                    setSyncState('online', '数据加载成功');
-                    return self.cache;
-                })
-                .catch(err => {
-                    console.warn('[DataStore] 远程加载失败:', err);
-                    var local = lsGet(LS_KEY);
-                    if (Array.isArray(local) && local.length > 0) {
-                        self.cache = local;
-                        setSyncState('offline', '离线模式 (使用本地缓存)');
-                    } else {
-                        self.cache = [];
-                        setSyncState('offline', '离线模式 (暂无数据)');
-                    }
-                    self.loaded = true;
-                    return self.cache;
-                });
-            },
-
-            _saveToRemote: function() {
-                var self = this;
-                var url = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
-                var controller = new AbortController();
-                var timeout = setTimeout(() => controller.abort(), 15000);
-
-                return fetch(url, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': JSONBIN_API_KEY
-                    },
-                    body: JSON.stringify(self.cache),
-                    signal: controller.signal
-                })
-                .then(res => {
-                    clearTimeout(timeout);
-                    if (!res.ok) throw new Error(`保存失败 HTTP ${res.status}`);
-                    setSyncState('online', '数据已保存到云端');
-                    return true;
-                })
-                .catch(err => {
-                    clearTimeout(timeout);
-                    if (err.name === 'AbortError') {
-                        console.error('[DataStore] 保存超时');
-                        setSyncState('offline', '保存超时，已存本地');
-                    } else {
-                        console.error('[DataStore] 保存失败:', err);
-                        setSyncState('offline', '保存到云端失败，已存本地');
-                    }
-                    return false;
-                });
+                    this.loaded = true;
+                    return this.cache;
+                } catch (err) {
+                    console.warn('[DataStore] Supabase 加载失败:', err);
+                    this.cache = lsGet(LS_KEY) || [];
+                    this.loaded = true;
+                    setSyncState('offline', '离线模式 (使用本地缓存)');
+                    return this.cache;
+                }
             },
 
             query: function(filterFn) {
-                if (!Array.isArray(this.cache)) {
-                    console.warn('[DataStore] cache 不是数组，返回空数组');
-                    return [];
-                }
                 return this.cache.filter(filterFn);
             },
 
-            // ★ 批量添加（一次性添加多条，只保存一次）
-            addBatch: function(items) {
-                var self = this;
-                if (!Array.isArray(self.cache)) {
-                    console.warn('[DataStore] cache 不是数组，重置为空数组');
-                    self.cache = [];
+            // 批量添加（一次性插入所有记录）
+            addBatch: async function(items) {
+                try {
+                    const dbItems = items.map(item => ({
+                        subject: item.subject,
+                        chapter: item.title,
+                        content: item.content,
+                        count: item.count,
+                        correct: item.correct,
+                        rate: item.rate
+                    }));
+                    const { data, error } = await supabaseClient.from('quiz_records').insert(dbItems).select();
+                    if (error) throw error;
+
+                    const newItems = data.map(mapToLocal);
+                    this.cache.push(...newItems);
+                    lsSet(LS_KEY, this.cache);
+                    toast(`✅ 已保存 ${data.length} 条记录到云端`);
+                    setSyncState('online');
+                    return { success: true, count: data.length };
+                } catch (err) {
+                    console.error('[DataStore] 批量保存失败:', err);
+                    // 失败则存入本地
+                    items.forEach(item => {
+                        item._id = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+                        this.cache.push(item);
+                    });
+                    lsSet(LS_KEY, this.cache);
+                    toast('⚠️ 数据已存本地，联网后自动同步');
+                    setSyncState('offline');
+                    return { success: false, count: items.length };
                 }
-                items.forEach(function(item) {
-                    item._id = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6) + '_' + Math.random().toString(36).substr(2, 4);
-                    self.cache.push(item);
-                });
-                lsSet(LS_KEY, self.cache);
-                return self._saveToRemote().then(function(success) {
-                    if (success) {
-                        toast('✅ 已保存 ' + items.length + ' 条记录到云端');
-                    } else {
-                        toast('⚠️ 数据已存本地，联网后自动同步');
-                    }
-                    return { success: success, count: items.length };
-                });
             },
 
-            // 单条添加（保留，用于编辑等场景）
-            add: function(item) {
-                var self = this;
-                if (!Array.isArray(self.cache)) {
-                    console.warn('[DataStore] cache 不是数组，重置为空数组');
-                    self.cache = [];
-                }
-                item._id = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-                self.cache.push(item);
-                lsSet(LS_KEY, self.cache);
-                return self._saveToRemote().then(function(success) {
-                    if (success) {
-                        toast('✅ 数据已同步到云端');
-                    } else {
-                        toast('⚠️ 数据已存本地，联网后自动同步');
-                    }
-                    return { success: success, item: item };
-                });
-            },
+            // 更新记录（编辑用，支持修改大类/章节）
+            update: async function(item) {
+                try {
+                    const updateData = {
+                        subject: item.subject,
+                        chapter: item.title, // 本地是 title，数据库是 chapter
+                        content: item.content,
+                        correct: item.correct,
+                        rate: item.rate
+                    };
+                    const { error } = await supabaseClient.from('quiz_records').update(updateData).eq('id', item._id);
+                    if (error) throw error;
 
-            // 更新单条记录（保留，但我们将在 saveChapterEdit 中直接操作 cache）
-            update: function(item) {
-                var self = this;
-                if (!Array.isArray(self.cache)) {
-                    console.warn('[DataStore] cache 不是数组，重置为空数组');
-                    self.cache = [];
-                }
-                var idx = self.cache.findIndex(x => x._id === item._id);
-                if (idx >= 0) {
-                    self.cache[idx] = item;
-                } else {
-                    self.cache.push(item);
-                }
-                lsSet(LS_KEY, self.cache);
-                return self._saveToRemote().then(function(success) {
-                    if (!success) toast('⚠️ 更新失败，已存本地');
+                    const idx = this.cache.findIndex(x => x._id === item._id);
+                    if (idx !== -1) this.cache[idx] = item;
+                    lsSet(LS_KEY, this.cache);
                     return item;
-                });
+                } catch (err) {
+                    console.error('[DataStore] 更新失败:', err);
+                    setSyncState('offline');
+                    return item;
+                }
             },
 
-            remove: function(id) {
-                var self = this;
-                if (!Array.isArray(self.cache)) {
-                    console.warn('[DataStore] cache 不是数组，重置为空数组');
-                    self.cache = [];
-                }
-                self.cache = self.cache.filter(x => x._id !== id);
-                lsSet(LS_KEY, self.cache);
-                return self._saveToRemote().then(function(success) {
-                    if (!success) toast('⚠️ 删除失败，已存本地');
+            // 删除记录
+            remove: async function(id) {
+                try {
+                    const { error } = await supabaseClient.from('quiz_records').delete().eq('id', id);
+                    if (error) throw error;
+                    this.cache = this.cache.filter(x => x._id !== id);
+                    lsSet(LS_KEY, this.cache);
+                    toast('✅ 删除成功');
+                    setSyncState('online');
                     return true;
-                });
+                } catch (err) {
+                    console.error('[DataStore] 删除失败:', err);
+                    toast('⚠️ 删除失败，已存本地');
+                    setSyncState('offline');
+                    return false;
+                }
             }
         };
+
+        // ============================================================
+        //  🚀 一键搬家：把本地旧数据推送到 Supabase
+        // ============================================================
+        async function migrateLocalToCloud() {
+            const localData = lsGet(LS_KEY);
+            if (localData.length === 0) {
+                document.getElementById('migrationBanner').style.display = 'none';
+                return toast('没有需要迁移的本地数据');
+            }
+
+            // 找出所有本地暂存的记录（_id 以 local_ 开头）
+            const unsynced = localData.filter(x => x._id && x._id.startsWith('local_'));
+            if (unsynced.length === 0) {
+                document.getElementById('migrationBanner').style.display = 'none';
+                return toast('本地数据已经全部同步，无需迁移');
+            }
+
+            toast(`⏳ 正在迁移 ${unsynced.length} 条本地数据...`);
+            const dbItems = unsynced.map(item => ({
+                subject: item.subject,
+                chapter: item.title,
+                content: item.content,
+                count: item.count || 1,
+                correct: item.correct || 0,
+                rate: item.rate || 0
+            }));
+
+            try {
+                const { data, error } = await supabaseClient.from('quiz_records').insert(dbItems).select();
+                if (error) throw error;
+                toast(`✅ 成功迁移 ${data.length} 条数据到云端！`);
+                document.getElementById('migrationBanner').style.display = 'none';
+                await DataStore.load(); // 重新加载云端数据覆盖本地
+                renderQuizData();
+            } catch (err) {
+                console.error('[Migration] 失败:', err);
+                toast('❌ 迁移失败，请重试');
+            }
+        }
 
         // ============================================================
         //  🧩 业务逻辑
@@ -697,10 +719,13 @@
 
             // 检查是否有任何修改
             var hasChanges = false;
+            var promises = [];
+            var updatedIds = new Set(); // 防止重复提交
 
             // ---- 处理选项修改 ----
             inputs.forEach(function(input) {
                 var id = input.dataset.id;
+                if (updatedIds.has(id)) return;
                 var field = input.dataset.field;
                 var newVal = input.value.toUpperCase().replace(/[^A-D]/g, '');
                 input.value = newVal;
@@ -721,21 +746,20 @@
                     if (p === '对' || p === '错') isCorrect = p;
                 });
 
-                if (field === 'myAns') {
-                    if (myAns !== newVal) hasChanges = true;
-                    myAns = newVal;
-                } else if (field === 'correctAns') {
-                    if (correctAns !== newVal) hasChanges = true;
-                    correctAns = newVal;
+                var changed = false;
+                if (field === 'myAns' && myAns !== newVal) { myAns = newVal; changed = true; }
+                if (field === 'correctAns' && correctAns !== newVal) { correctAns = newVal; changed = true; }
+
+                if (changed) {
+                    hasChanges = true;
+                    var newIsCorrect = (myAns && correctAns && myAns === correctAns) ? '对' : '错';
+                    var newContent = '第' + qno + '题|我的答案:' + myAns + '|正确答案:' + correctAns + '|' + newIsCorrect;
+                    record.content = newContent;
+                    record.correct = (newIsCorrect === '对') ? 1 : 0;
+                    record.rate = (newIsCorrect === '对') ? 100 : 0;
+                    promises.push(DataStore.update(record));
+                    updatedIds.add(id);
                 }
-
-                var newIsCorrect = (myAns && correctAns && myAns === correctAns) ? '对' : '错';
-                var newContent = '第' + qno + '题|我的答案:' + myAns + '|正确答案:' + correctAns + '|' + newIsCorrect;
-
-                // 直接修改 cache 中的记录
-                record.content = newContent;
-                record.correct = (newIsCorrect === '对') ? 1 : 0;
-                record.rate = (newIsCorrect === '对') ? 100 : 0;
             });
 
             // ---- 处理分类修改 ----
@@ -755,6 +779,11 @@
                     recordsToUpdate.forEach(function(r) {
                         if (catChanged) r.subject = newCat;
                         if (chChanged) r.title = newCh;
+                        // 注意：如果选项也被修改了，它已经在 promises 里了，这里不再重复 push
+                        if (!updatedIds.has(r._id)) {
+                            promises.push(DataStore.update(r));
+                            updatedIds.add(r._id);
+                        }
                     });
                     hasChanges = true;
                 } else {
@@ -770,22 +799,18 @@
                 return;
             }
 
-            // ---- 保存整个 cache 到云端 ----
+            // ---- 保存所有修改到云端 ----
             setSyncState('syncing', '正在保存修改...');
-            DataStore._saveToRemote().then(function(success) {
-                if (success) {
-                    toast('✅ 修改已保存到云端');
-                } else {
-                    toast('⚠️ 保存失败，数据已存本地，请检查网络');
-                }
+            Promise.all(promises).then(function() {
+                toast('✅ 修改已保存到云端');
                 // 退出编辑模式
                 window._editingChapter = null;
                 // 重新渲染（直接使用更新后的 cache）
                 renderQuizData();
-                setSyncState(success ? 'online' : 'offline');
+                setSyncState('online');
             }).catch(function(err) {
                 console.error('[saveChapterEdit] 保存失败:', err);
-                toast('❌ 保存失败：' + (err.message || '未知错误'));
+                toast('❌ 部分保存失败，请检查网络');
                 setSyncState('offline');
                 // 仍然退出编辑模式，但数据可能未同步
                 window._editingChapter = null;
@@ -1205,6 +1230,13 @@
                 setTimeout(function() {
                     initInputTable();
                 }, 200);
+
+                // 检测是否有本地未同步的旧数据，显示横幅
+                const localData = lsGet(LS_KEY);
+                const unsynced = localData.filter(x => x._id && x._id.startsWith('local_'));
+                if (unsynced.length > 0) {
+                    document.getElementById('migrationBanner').style.display = 'block';
+                }
             }).catch(function() {
                 setTimeout(function() {
                     initInputTable();
