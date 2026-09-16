@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- 上岸工作台 · 做题数据（Supabase 云端同步） -->
+<!-- 工作台 · 做题数据（Supabase 云端同步） -->
 <!-- 功能：多端同步、编辑/保存（支持修改选项/答案/大类/章节）、删除章节、大类管理、腾讯文档导出 -->
 <html lang="zh-CN">
 <head>
@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#b8e0d2">
-    <title>上岸工作台·做题数据</title>
+    <title>工作台·做题数据</title>
     <style>
         /* ====== 样式（完整版） ====== */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -33,6 +33,10 @@
         .card { background:var(--card); border-radius:var(--radius); padding:16px; margin-bottom:14px; box-shadow:var(--shadow); border:1.5px solid var(--border); }
         .card-title { font-size:14px; font-weight:700; color:var(--text); margin-bottom:12px; display:flex; align-items:center; gap:6px; }
         .card-title .ct-ic { width:18px; height:18px; }
+        /* ★ 可折叠标题 */
+        .card-title.clickable { cursor:pointer; user-select:none; -webkit-user-select:none; }
+        .card-title.clickable:active { opacity:.7; }
+        .card-title .fold-arrow { font-size:11px; font-weight:700; color:var(--text-light); margin-left:6px; white-space:nowrap; }
         .btn { display:inline-flex; align-items:center; justify-content:center; gap:5px; padding:8px 16px; border:none; border-radius:var(--radius-sm); font-size:13px; font-weight:700; cursor:pointer; transition:all .2s; min-height:40px; font-family:inherit; }
         .btn:active { transform:scale(.96); }
         .btn-primary { background:var(--green-400); color:#fff; }
@@ -151,7 +155,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M8 14v4M13 10v8M18 6v12"/></svg>
         </div>
         <div>
-            <div class="name">上岸工作台</div>
+            <div class="name">工作台</div>
             <div class="sub">做题数据 · 正确率追踪</div>
         </div>
     </div>
@@ -187,15 +191,18 @@
             <div id="quizCatStats"></div>
         </div>
 
-        <!-- 做题明细 -->
+        <!-- 做题明细（★ 可折叠） -->
         <div class="card">
-            <div class="card-title">
+            <div class="card-title clickable" onclick="toggleQuizDetail()">
                 <svg class="ct-ic" viewBox="0 0 24 24" fill="none" stroke="var(--green-500)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
                 做题明细（选项·答案·对错·正确率）
                 <span class="badge badge-blue" id="quizTotalCount" style="margin-left:auto">0</span>
+                <span class="fold-arrow" id="quizDetailArrow">展开 ▼</span>
             </div>
-            <div class="cat-tabs" id="quizCats"></div>
-            <div id="quizChapterTables"></div>
+            <div id="quizDetailBody">
+                <div class="cat-tabs" id="quizCats"></div>
+                <div id="quizChapterTables"></div>
+            </div>
         </div>
 
         <!-- 新增做题记录 -->
@@ -468,6 +475,31 @@
         //  🧩 业务逻辑
         // ============================================================
         var DT_QUIZ = '做题记录';
+
+        // ★ 做题明细折叠状态（默认折叠）
+        var DETAIL_KEY = 'wb_shangan_detail_open';
+        var quizDetailOpen = false;
+        (function initDetailFlag() {
+            try {
+                var v = localStorage.getItem(DETAIL_KEY);
+                if (v === '1') quizDetailOpen = true;
+                else if (v === '0') quizDetailOpen = false;
+            } catch (e) {}
+        })();
+
+        function applyQuizDetailState() {
+            var body = document.getElementById('quizDetailBody');
+            var arrow = document.getElementById('quizDetailArrow');
+            if (!body || !arrow) return;
+            body.style.display = quizDetailOpen ? 'block' : 'none';
+            arrow.textContent = quizDetailOpen ? '收起 ▲' : '展开 ▼';
+        }
+
+        function toggleQuizDetail() {
+            quizDetailOpen = !quizDetailOpen;
+            try { localStorage.setItem(DETAIL_KEY, quizDetailOpen ? '1' : '0'); } catch (e) {}
+            applyQuizDetailState();
+        }
 
         function parseQuizContent(content) {
             if (!content) return { qno: 0, myAns: '', correctAns: '', isCorrect: '错' };
@@ -1115,7 +1147,7 @@
                 if (parsed.isCorrect === '对') totalCorrect++;
             });
 
-            var md = '# 上岸工作台 · 做题记录\n\n';
+            var md = '# 工作台 · 做题记录\n\n';
             md += '**同步时间：** ' + new Date().toLocaleString('zh-CN') + '\n';
             md += '**总题数：** ' + totalAll + ' 题 | **正确：** ' + totalCorrect + ' 题 | **正确率：** ' + (totalAll > 0 ? Math.round(totalCorrect / totalAll * 100) : 0) + '%\n\n';
             md += '---\n\n';
@@ -1224,6 +1256,7 @@
         //  🚀 初始化
         // ============================================================
         function init() {
+            applyQuizDetailState();  // ★ 先应用折叠状态
             renderCatSelect();
             DataStore.load().then(function() {
                 renderQuizData();
