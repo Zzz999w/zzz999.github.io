@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- 工作台 · 做题数据（Supabase 云端同步） -->
-<!-- 功能：多端同步、三级分类（大类/题本/章节）、编辑/保存、删除章节、腾讯文档导出 -->
+<!-- 功能：多端同步、三级分类（大类/题本/章节）、编辑/保存、删除章节、腾讯文档导出、大类细分统计 -->
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -10,7 +10,6 @@
     <meta name="theme-color" content="#b8e0d2">
     <title>工作台·做题数据</title>
     <style>
-        /* ====== 样式（完整版） ====== */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         :root { --green-50:#f0f9f4; --green-100:#dcf2e3; --green-200:#c4e6d1; --green-300:#a9dabb; --green-400:#8ccaa3; --green-500:#6fb88a; --green-600:#5aa877; --pink-100:#fce4ec; --pink-200:#f8bbd0; --pink-300:#f48fb1; --yellow-100:#fff9e6; --yellow-200:#fff3b8; --yellow-300:#ffe988; --blue-100:#e3f2fd; --blue-200:#bbdefb; --blue-300:#90caf9; --blue-600:#1565c0; --purple-100:#f3e5f5; --purple-200:#e1bee7; --orange-100:#fff3e0; --orange-200:#ffe0b2; --red:#ff8a80; --red-deep:#e53935; --text:#3d5a4e; --text-light:#6b8a7a; --text-lighter:#9bb5a5; --bg:#f0f9f4; --card:#ffffff; --border:#dcf2e3; --shadow:0 2px 12px rgba(111,184,138,.12); --radius:16px; --radius-sm:10px; --radius-xs:8px; }
         html, body { height:100%; }
@@ -33,7 +32,6 @@
         .card { background:var(--card); border-radius:var(--radius); padding:16px; margin-bottom:14px; box-shadow:var(--shadow); border:1.5px solid var(--border); }
         .card-title { font-size:14px; font-weight:700; color:var(--text); margin-bottom:12px; display:flex; align-items:center; gap:6px; }
         .card-title .ct-ic { width:18px; height:18px; }
-        /* 可折叠标题 */
         .card-title.clickable { cursor:pointer; user-select:none; -webkit-user-select:none; }
         .card-title.clickable:active { opacity:.7; }
         .card-title .fold-arrow { font-size:11px; font-weight:700; color:var(--text-light); margin-left:6px; white-space:nowrap; }
@@ -55,10 +53,7 @@
         .form-row { margin-bottom:12px; }
         .form-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
         .badge { display:inline-flex; align-items:center; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:700; }
-        .badge-green { background:var(--green-100); color:var(--green-600); }
-        .badge-red { background:var(--red); color:#fff; }
         .badge-blue { background:var(--blue-100); color:#1565c0; }
-        .badge-gold { background:var(--yellow-200); color:#795548; }
         .empty { text-align:center; padding:30px 20px; color:var(--text-lighter); font-size:13px; }
         .empty svg { width:48px; height:48px; margin-bottom:8px; opacity:.4; }
         .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:rgba(61,90,78,.92); color:#fff; padding:10px 24px; border-radius:24px; font-size:13px; font-weight:600; z-index:999; opacity:0; transition:opacity .3s, bottom .3s; pointer-events:none; }
@@ -71,13 +66,6 @@
         .cat-tabs::-webkit-scrollbar { height:0; }
         .cat-tab { padding:6px 14px; border-radius:20px; background:var(--card); border:1.5px solid var(--border); font-size:12px; font-weight:700; color:var(--text-light); cursor:pointer; white-space:nowrap; transition:all .2s; }
         .cat-tab.active { background:var(--green-400); color:#fff; border-color:var(--green-400); }
-        .stat-table { width:100%; border-collapse:collapse; font-size:13px; }
-        .stat-table th { background:var(--green-100); color:var(--green-600); font-weight:700; padding:10px; text-align:center; border-radius:var(--radius-xs) var(--radius-xs) 0 0; }
-        .stat-table td { padding:10px; text-align:center; border-bottom:1px solid var(--border); color:var(--text); }
-        .stat-table tr:hover td { background:var(--green-50); }
-        .stat-table .rate-good { color:var(--green-600); font-weight:700; }
-        .stat-table .rate-mid { color:#f57f17; font-weight:700; }
-        .stat-table .rate-low { color:var(--red-deep); font-weight:700; }
         .overview-grid { display:flex; gap:12px; flex-wrap:wrap; }
         .overview-item { flex:1; min-width:100px; border-radius:12px; padding:14px; text-align:center; }
         .overview-item .num { font-size:28px; font-weight:900; line-height:1.2; }
@@ -117,7 +105,6 @@
         .quiz-table tr.wrong-row { background:#fff8f8; }
         .quiz-table tr.right-row { background:var(--green-50); }
         .ch-summary { padding:8px 14px; background:var(--green-50); font-size:12px; font-weight:700; color:var(--text-light); display:flex; justify-content:space-between; border-top:2px solid var(--border); }
-        /* 编辑分类输入框样式 */
         .edit-cat-input, .edit-book-input, .edit-ch-input {
             font-size:14px; font-weight:800; color:var(--green-600);
             border:1.5px solid var(--border); border-radius:4px;
@@ -134,8 +121,6 @@
             .top-bar .name { font-size:16px; }
             .main { padding:0 12px 80px; }
             .form-grid-3 { grid-template-columns:1fr; gap:0; }
-            .stat-table { font-size:11px; }
-            .stat-table th, .stat-table td { padding:6px 4px; }
             .overview-item .num { font-size:24px; }
             .ch-table-head { flex-direction:column; align-items:stretch; }
             .ch-table-head .ch-left { flex-wrap:wrap; }
@@ -163,7 +148,6 @@
 
     <div class="main">
 
-        <!-- 一键搬家提示横幅（默认隐藏） -->
         <div id="migrationBanner" class="card" style="display:none; background:var(--yellow-100); border-color:var(--yellow-200);">
             <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                 <div>
@@ -174,7 +158,6 @@
             </div>
         </div>
 
-        <!-- 总览卡片 -->
         <div class="card">
             <div class="card-title">
                 <svg class="ct-ic" viewBox="0 0 24 24" fill="none" stroke="var(--blue-300)" stroke-width="2"><path d="M3 3v18h18M8 14v4M13 10v8M18 6v12"/></svg>
@@ -183,7 +166,6 @@
             <div class="overview-grid" id="quizOverview"></div>
         </div>
 
-        <!-- 各大类正确率 -->
         <div class="card">
             <div class="card-title">
                 <svg class="ct-ic" viewBox="0 0 24 24" fill="none" stroke="var(--green-500)" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l3-4 3 3 5-6"/></svg>
@@ -192,7 +174,6 @@
             <div id="quizCatStats"></div>
         </div>
 
-        <!-- 做题明细（可折叠） -->
         <div class="card">
             <div class="card-title clickable" onclick="toggleQuizDetail()">
                 <svg class="ct-ic" viewBox="0 0 24 24" fill="none" stroke="var(--green-500)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
@@ -206,7 +187,6 @@
             </div>
         </div>
 
-        <!-- 新增做题记录 -->
         <div class="card">
             <div class="card-title">
                 <svg class="ct-ic" viewBox="0 0 24 24" fill="none" stroke="var(--green-500)" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
@@ -278,11 +258,8 @@
         const SUPABASE_KEY = 'sb_publishable_SC5N0w53oRo76C2nyo0GkA_q_cPF4Ax';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // ============================================================
-        //  📦 数据存储层（基于 Supabase）
-        // ============================================================
         var LS_KEY = 'wb_shangan_data_v1';
-        var BOOK_KEY = 'wb_shangan_books_v1'; // 存储题本历史
+        var BOOK_KEY = 'wb_shangan_books_v1';
 
         function setSyncState(state, text) {
             var bar = document.getElementById('syncBar');
@@ -302,7 +279,7 @@
             t.textContent = msg;
             t.classList.add('show');
             clearTimeout(window._toastTimer);
-            window._toastTimer = setTimeout(function() { t.classList.remove('show'); }, 3500);
+            window._toastTimer = setTimeout(function() { t.classList.remove('show'); }, 4000);
         }
 
         function mapToLocal(item) {
@@ -310,7 +287,7 @@
                 _id: item.id.toString(),
                 dataType: '做题记录',
                 subject: item.subject,
-                book: item.book || '', // 新增题本
+                book: item.book || '',
                 title: item.chapter,
                 content: item.content,
                 count: item.count || 1,
@@ -363,7 +340,7 @@
                 try {
                     const dbItems = items.map(item => ({
                         subject: item.subject,
-                        book: item.book, // 新增题本
+                        book: item.book || '',
                         chapter: item.title,
                         content: item.content,
                         count: item.count,
@@ -389,30 +366,6 @@
                     toast('⚠️ 数据已存本地，联网后自动同步');
                     setSyncState('offline');
                     return { success: false, count: items.length };
-                }
-            },
-
-            update: async function(item) {
-                try {
-                    const updateData = {
-                        subject: item.subject,
-                        book: item.book, // 新增题本
-                        chapter: item.title,
-                        content: item.content,
-                        correct: item.correct,
-                        rate: item.rate
-                    };
-                    const { error } = await supabaseClient.from('quiz_records').update(updateData).eq('id', item._id);
-                    if (error) throw error;
-
-                    const idx = this.cache.findIndex(x => x._id === item._id);
-                    if (idx !== -1) this.cache[idx] = item;
-                    lsSet(LS_KEY, this.cache);
-                    return item;
-                } catch (err) {
-                    console.error('[DataStore] 更新失败:', err);
-                    setSyncState('offline');
-                    return item;
                 }
             },
 
@@ -453,7 +406,7 @@
             toast(`⏳ 正在迁移 ${unsynced.length} 条本地数据...`);
             const dbItems = unsynced.map(item => ({
                 subject: item.subject,
-                book: item.book || '', // 兼容旧数据
+                book: item.book || '',
                 chapter: item.title,
                 content: item.content,
                 count: item.count || 1,
@@ -470,7 +423,7 @@
                 renderQuizData();
             } catch (err) {
                 console.error('[Migration] 失败:', err);
-                toast('❌ 迁移失败，请重试');
+                toast('❌ 迁移失败：' + (err.message || '请重试'));
             }
         }
 
@@ -479,7 +432,6 @@
         // ============================================================
         var DT_QUIZ = '做题记录';
 
-        // 折叠状态
         var DETAIL_KEY = 'wb_shangan_detail_open';
         var quizDetailOpen = false;
         (function initDetailFlag() {
@@ -502,6 +454,13 @@
             quizDetailOpen = !quizDetailOpen;
             try { localStorage.setItem(DETAIL_KEY, quizDetailOpen ? '1' : '0'); } catch (e) {}
             applyQuizDetailState();
+        }
+
+        // ★ 新增：大类细分展开/收起
+        function toggleCatStat(cat) {
+            if (!window._openCatStats) window._openCatStats = {};
+            window._openCatStats[cat] = !window._openCatStats[cat];
+            renderQuizData();
         }
 
         function parseQuizContent(content) {
@@ -551,7 +510,7 @@
         }
 
         // ============================================================
-        //  📊 渲染函数（支持三级分类）
+        //  📊 渲染函数
         // ============================================================
         function renderQuizData() {
             var records = getQuizRecords();
@@ -563,32 +522,35 @@
             records.forEach(function(r) {
                 var parsed = parseQuizContent(r.content);
                 var cat = r.subject || '未分类';
-                var book = r.book || '';
+                var book = r.book || '无题本';
                 var ch = r.title || '未知章节';
-                var key = cat + '||' + book + '||' + ch; // 三级键
+                var key = cat + '||' + book + '||' + ch;
 
-                if (book) allBooks.add(book);
+                if (book !== '无题本') allBooks.add(book);
 
-                if (!cats[cat]) cats[cat] = { total: 0, correct: 0 };
+                if (!cats[cat]) cats[cat] = { total: 0, correct: 0, books: {} };
+                if (!cats[cat].books[book]) cats[cat].books[book] = { total: 0, correct: 0 };
                 if (!chapters[key]) chapters[key] = { total: 0, correct: 0, cat: cat, book: book, ch: ch, records: [] };
+
                 cats[cat].total++;
+                cats[cat].books[book].total++;
                 chapters[key].total++;
                 chapters[key].records.push({ r: r, p: parsed });
                 totalAll++;
+
                 if (parsed.isCorrect === '对') {
                     cats[cat].correct++;
+                    cats[cat].books[book].correct++;
                     chapters[key].correct++;
                     totalCorrect++;
                 }
             });
 
-            // 更新题本历史记录到 datalist
             var bookList = document.getElementById('bookList');
             if (bookList) {
                 bookList.innerHTML = Array.from(allBooks).map(function(b) { return '<option value="' + b + '">'; }).join('');
             }
 
-            // 总览
             document.getElementById('quizTotalCount').textContent = records.length;
             var totalRate = totalAll > 0 ? Math.round(totalCorrect / totalAll * 100) : 0;
             var rateColor = totalRate >= 70 ? 'var(--green-500)' : totalRate >= 50 ? '#f57f17' : 'var(--red-deep)';
@@ -599,16 +561,37 @@
             overviewHtml += '<div class="overview-item" style="background:var(--red)"><div class="num" style="color:#fff">' + (totalAll - totalCorrect) + '</div><div class="lbl" style="color:#fff">错误数</div></div>';
             document.getElementById('quizOverview').innerHTML = overviewHtml;
 
-            // 各大类正确率
+            // ★ 各大类正确率 - 支持展开题本细分
             var catHtml = '';
+            if (!window._openCatStats) window._openCatStats = {};
             Object.keys(cats).sort().forEach(function(cat) {
                 var s = cats[cat];
                 var rate = s.total > 0 ? Math.round(s.correct / s.total * 100) : 0;
                 var barColor = rate >= 70 ? 'linear-gradient(90deg,var(--green-400),var(--green-500))' : rate >= 50 ? 'linear-gradient(90deg,#ffcc80,#ffa726)' : 'linear-gradient(90deg,var(--red),var(--red-deep))';
                 var rc = rate >= 70 ? 'var(--green-500)' : rate >= 50 ? '#f57f17' : 'var(--red-deep)';
-                catHtml += '<div class="progress-wrap">' +
-                    '<div class="progress-label"><span style="font-weight:700">' + cat + '</span><span style="color:' + rc + ';font-weight:800">' + s.correct + '/' + s.total + ' (' + rate + '%)</span></div>' +
-                    '<div class="progress-bar"><div class="progress-fill" style="width:' + rate + '%;background:' + barColor + '"></div></div></div>';
+                var isOpen = window._openCatStats[cat] || false;
+                
+                catHtml += '<div class="progress-wrap" style="margin-bottom:10px;">';
+                catHtml += '<div class="progress-label" onclick="toggleCatStat(\'' + cat.replace(/'/g, "\\'") + '\')" style="cursor:pointer; user-select:none;">' +
+                    '<span style="font-weight:700; display:flex; align-items:center; gap:4px;">' + cat + ' <span style="font-size:10px; color:var(--text-light); font-weight:normal;">' + (isOpen ? '收起 ▲' : '展开 ▼') + '</span></span>' +
+                    '<span style="color:' + rc + ';font-weight:800">' + s.correct + '/' + s.total + ' (' + rate + '%)</span></div>';
+                catHtml += '<div class="progress-bar" style="cursor:pointer; height:10px;" onclick="toggleCatStat(\'' + cat.replace(/'/g, "\\'") + '\')"><div class="progress-fill" style="width:' + rate + '%;background:' + barColor + '"></div></div>';
+                
+                if (isOpen && s.books) {
+                    catHtml += '<div style="padding-left:12px; margin-top:8px; border-left:2px solid var(--green-200);">';
+                    Object.keys(s.books).sort().forEach(function(book) {
+                        var b = s.books[book];
+                        var bRate = b.total > 0 ? Math.round(b.correct / b.total * 100) : 0;
+                        var bBarColor = bRate >= 70 ? 'linear-gradient(90deg,var(--green-300),var(--green-400))' : bRate >= 50 ? 'linear-gradient(90deg,#ffe0b2,#ffcc80)' : 'linear-gradient(90deg,#ffcdd2,#ff8a80)';
+                        var bRc = bRate >= 70 ? 'var(--green-500)' : bRate >= 50 ? '#f57f17' : 'var(--red-deep)';
+                        
+                        catHtml += '<div class="progress-wrap" style="margin-bottom:6px;">' +
+                            '<div class="progress-label"><span style="font-weight:600; font-size:11px; color:var(--text-light);">' + book + '</span><span style="color:' + bRc + ';font-weight:700; font-size:11px;">' + b.correct + '/' + b.total + ' (' + bRate + '%)</span></div>' +
+                            '<div class="progress-bar" style="height:6px;"><div class="progress-fill" style="width:' + bRate + '%;background:' + bBarColor + '"></div></div></div>';
+                    });
+                    catHtml += '</div>';
+                }
+                catHtml += '</div>';
             });
             document.getElementById('quizCatStats').innerHTML = catHtml || '<div class="empty">暂无数据</div>';
 
@@ -642,7 +625,6 @@
 
                     var catDisplay, bookDisplay, chDisplay;
                     if (isEditing) {
-                        // 修复：阻止点击/拖动事件冒泡，防止触发折叠面板重新渲染，并加宽输入框
                         catDisplay = '<input type="text" class="edit-cat-input" value="' + s.cat + '" data-original-cat="' + s.cat + '" data-chapterkey="' + k + '" placeholder="大类" style="width:110px; padding:4px 8px; margin-right:4px;" onclick="event.stopPropagation();" onmousedown="event.stopPropagation();">';
                         bookDisplay = '<input type="text" class="edit-book-input" value="' + (s.book || '') + '" data-original-book="' + (s.book || '') + '" data-chapterkey="' + k + '" placeholder="题本" style="width:110px; padding:4px 8px; margin-right:4px;" onclick="event.stopPropagation();" onmousedown="event.stopPropagation();">';
                         chDisplay = '<input type="text" class="edit-ch-input" value="' + s.ch + '" data-original-ch="' + s.ch + '" data-chapterkey="' + k + '" placeholder="章节" style="width:110px; padding:4px 8px; margin-right:4px;" onclick="event.stopPropagation();" onmousedown="event.stopPropagation();">';
@@ -722,7 +704,7 @@
         }
 
         // ============================================================
-        //  ✏️ 编辑/保存功能（支持三级分类）
+        //  ✏️ 编辑/保存功能
         // ============================================================
         function toggleChTable(key) {
             if (!window._openChapters) window._openChapters = {};
@@ -738,20 +720,26 @@
             toast('✏️ 已进入编辑模式，可修改选项、答案、大类、题本、章节，修改后点击「保存」');
         }
 
+        // ★ 关键修复：先暂存改动，云端全部成功后再提交到本地缓存
         function saveChapterEdit(chapterKey) {
             var inputs = document.querySelectorAll('.ch-table-group[data-chapterkey="' + chapterKey + '"] .edit-input');
             var catInput = document.querySelector('.ch-table-group[data-chapterkey="' + chapterKey + '"] .edit-cat-input');
             var bookInput = document.querySelector('.ch-table-group[data-chapterkey="' + chapterKey + '"] .edit-book-input');
             var chInput = document.querySelector('.ch-table-group[data-chapterkey="' + chapterKey + '"] .edit-ch-input');
 
-            var hasChanges = false;
-            var promises = [];
-            var updatedIds = new Set();
+            var pendingChanges = {};
 
-            // 处理选项修改
+            function stageRecord(record, updates) {
+                var id = record._id;
+                if (!pendingChanges[id]) {
+                    pendingChanges[id] = Object.assign({}, record);
+                }
+                Object.assign(pendingChanges[id], updates);
+            }
+
+            // ---- 1. 收集选项修改 ----
             inputs.forEach(function(input) {
                 var id = input.dataset.id;
-                if (updatedIds.has(id)) return;
                 var field = input.dataset.field;
                 var newVal = input.value.toUpperCase().replace(/[^A-D]/g, '');
                 input.value = newVal;
@@ -759,35 +747,25 @@
                 var record = DataStore.cache.find(function(r) { return r._id === id; });
                 if (!record) return;
 
-                var parts = record.content.split('|');
-                var qno = 0, myAns = '', correctAns = '', isCorrect = '错';
-                parts.forEach(function(p) {
-                    if (p.indexOf('第') === 0 && p.indexOf('题') > 0) {
-                        var m = p.match(/第(\d+)题/);
-                        if (m) qno = parseInt(m[1]);
-                    }
-                    if (p.indexOf('我的答案:') === 0) myAns = p.slice(5);
-                    if (p.indexOf('正确答案:') === 0) correctAns = p.slice(5);
-                    if (p === '对' || p === '错') isCorrect = p;
-                });
+                var parsed = parseQuizContent(record.content);
+                var qno = parsed.qno, myAns = parsed.myAns, correctAns = parsed.correctAns;
 
                 var changed = false;
                 if (field === 'myAns' && myAns !== newVal) { myAns = newVal; changed = true; }
                 if (field === 'correctAns' && correctAns !== newVal) { correctAns = newVal; changed = true; }
 
                 if (changed) {
-                    hasChanges = true;
                     var newIsCorrect = (myAns && correctAns && myAns === correctAns) ? '对' : '错';
                     var newContent = '第' + qno + '题|我的答案:' + myAns + '|正确答案:' + correctAns + '|' + newIsCorrect;
-                    record.content = newContent;
-                    record.correct = (newIsCorrect === '对') ? 1 : 0;
-                    record.rate = (newIsCorrect === '对') ? 100 : 0;
-                    promises.push(DataStore.update(record));
-                    updatedIds.add(id);
+                    stageRecord(record, {
+                        content: newContent,
+                        correct: (newIsCorrect === '对') ? 1 : 0,
+                        rate: (newIsCorrect === '对') ? 100 : 0
+                    });
                 }
             });
 
-            // 处理分类修改（大类、题本、章节）
+            // ---- 2. 收集分类修改 ----
             var oldCat = catInput ? catInput.dataset.originalCat : '';
             var oldBook = bookInput ? bookInput.dataset.originalBook : '';
             var oldCh = chInput ? chInput.dataset.originalCh : '';
@@ -802,41 +780,77 @@
                 var recordsToUpdate = DataStore.cache.filter(function(r) {
                     return r.dataType === DT_QUIZ && r.subject === oldCat && (r.book || '') === oldBook && r.title === oldCh;
                 });
-                if (recordsToUpdate.length > 0) {
-                    recordsToUpdate.forEach(function(r) {
-                        if (catChanged) r.subject = newCat;
-                        if (bookChanged) r.book = newBook;
-                        if (chChanged) r.title = newCh;
-                        if (!updatedIds.has(r._id)) {
-                            promises.push(DataStore.update(r));
-                            updatedIds.add(r._id);
-                        }
-                    });
-                    hasChanges = true;
-                } else {
+                if (recordsToUpdate.length === 0) {
                     toast('⚠️ 未找到要修改分类的记录');
+                } else {
+                    recordsToUpdate.forEach(function(r) {
+                        var updates = {};
+                        if (catChanged) updates.subject = newCat;
+                        if (bookChanged) updates.book = newBook;
+                        if (chChanged) updates.title = newCh;
+                        stageRecord(r, updates);
+                    });
                 }
             }
 
-            if (!hasChanges) {
+            var ids = Object.keys(pendingChanges);
+            if (ids.length === 0) {
                 toast('没有修改需要保存');
                 window._editingChapter = null;
                 renderQuizData();
                 return;
             }
 
-            setSyncState('syncing', '正在保存修改...');
-            Promise.all(promises).then(function() {
+            setSyncState('syncing', '正在保存 ' + ids.length + ' 条修改...');
+
+            // ---- 3. 先全部更新到云端，成功后才提交到缓存 ----
+            var savePromises = ids.map(function(id) {
+                var record = pendingChanges[id];
+                var updateObj = {
+                    subject: record.subject,
+                    book: record.book || '',
+                    chapter: record.title,
+                    content: record.content,
+                    correct: record.correct,
+                    rate: record.rate
+                };
+                if (String(id).indexOf('local_') === 0) {
+                    return Promise.resolve({ id: id, error: new Error('本地记录尚未同步到云端，请联网后等待自动同步') });
+                }
+                return supabaseClient.from('quiz_records').update(updateObj).eq('id', id).then(function(res) {
+                    return { id: id, error: res.error };
+                }).catch(function(err) {
+                    return { id: id, error: err };
+                });
+            });
+
+            Promise.all(savePromises).then(function(results) {
+                var errors = results.filter(function(r) { return r.error; });
+                if (errors.length > 0) {
+                    var msg = errors[0].error && (errors[0].error.message || errors[0].error.toString()) || '未知错误';
+                    console.error('[saveChapterEdit] 保存失败:', errors);
+                    toast('❌ 保存失败：' + msg + '（已保留编辑状态，可修改后重试）');
+                    setSyncState('offline');
+                    return;
+                }
+
+                // ---- 全部成功，提交到本地缓存 ----
+                ids.forEach(function(id) {
+                    var idx = DataStore.cache.findIndex(function(x) { return x._id === id; });
+                    if (idx !== -1) {
+                        Object.assign(DataStore.cache[idx], pendingChanges[id]);
+                    }
+                });
+                lsSet(LS_KEY, DataStore.cache);
+
                 toast('✅ 修改已保存到云端');
                 window._editingChapter = null;
                 renderQuizData();
                 setSyncState('online');
             }).catch(function(err) {
-                console.error('[saveChapterEdit] 保存失败:', err);
-                toast('❌ 部分保存失败，请检查网络');
+                console.error('[saveChapterEdit] 保存异常:', err);
+                toast('❌ 保存异常：' + (err.message || '未知错误'));
                 setSyncState('offline');
-                window._editingChapter = null;
-                renderQuizData();
             });
         }
 
@@ -1066,7 +1080,7 @@
         }
 
         // ============================================================
-        //  💾 批量保存（新增了题本字段）
+        //  💾 批量保存
         // ============================================================
         function saveInputBatch() {
             var cat = document.getElementById('quizCat').value;
@@ -1083,7 +1097,6 @@
                 return;
             }
 
-            // 保存题本历史
             if (book) {
                 var books = lsGet(BOOK_KEY);
                 if (books.indexOf(book) < 0) {
@@ -1261,7 +1274,6 @@
         function init() {
             applyQuizDetailState();
             renderCatSelect();
-            // 加载题本历史
             var books = lsGet(BOOK_KEY);
             var bookList = document.getElementById('bookList');
             if (bookList && books.length > 0) {
